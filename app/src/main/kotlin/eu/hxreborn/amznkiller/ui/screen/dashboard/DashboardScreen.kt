@@ -25,13 +25,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.automirrored.outlined.Rule
 import androidx.compose.material.icons.outlined.Android
+import androidx.compose.material.icons.outlined.Cancel
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Construction
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Extension
-import androidx.compose.material.icons.outlined.PauseCircle
 import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.Science
-import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.CloudDone
@@ -611,10 +611,10 @@ private fun MetricsGrid(
                     .padding(16.dp),
         ) {
             Icon(
-                imageVector = if (adBlockingActive) Icons.Outlined.Shield else Icons.Outlined.PauseCircle,
+                imageVector = if (adBlockingActive) Icons.Outlined.CheckCircle else Icons.Outlined.Cancel,
                 contentDescription = null,
                 modifier = Modifier.size(24.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = if (adBlockingActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
             )
             Spacer(Modifier.height(12.dp))
             Text(
