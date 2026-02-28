@@ -70,24 +70,33 @@
     addChart(camelUrl, 'CamelCamelCamel', camelLink, darkFilter);
 
     var targets = [
-      '#olpLinkWidget_feature_div > div.a-section.olp-link-widget > div > div.a-cardui.olp-link-widget-card-padding.olp-widget-bottomPadding',
+      '#buyBoxAccordion',
       '#corePriceDisplay_desktop_feature_div',
       '#corePrice_feature_div',
       '#unifiedPrice_feature_div',
-      '#price_feature_div',
+      '#mobileapp_buybox_feature_div',
       '#desktop_buybox',
       '#buybox',
-      '#buyBoxAccordion',
+      '#price_feature_div',
       '#newAccordionRow',
       '#productOverview_feature_div',
       '#centerCol',
       '#mobileapp_accordion_feature_div'
     ];
 
+    function isInsideButton(el) {
+      var p = el;
+      while (p) {
+        if (p.tagName === 'BUTTON') return true;
+        p = p.parentElement;
+      }
+      return false;
+    }
+
     function tryInsert() {
       for (var i = 0; i < targets.length; i++) {
         var el = document.querySelector(targets[i]);
-        if (el && el.parentNode) {
+        if (el && el.parentNode && !isInsideButton(el)) {
           el.parentNode.insertBefore(c, el.nextSibling);
           return targets[i];
         }
