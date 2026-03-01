@@ -135,14 +135,15 @@ object ChartOverlay {
         sheet.addView(webView)
 
         val sheetParams =
-            FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT,
-            ).apply {
-                topMargin =
-                    (activity.resources.displayMetrics.heightPixels * 0.15)
-                        .toInt()
-            }
+            FrameLayout
+                .LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                ).apply {
+                    topMargin =
+                        (activity.resources.displayMetrics.heightPixels * 0.15)
+                            .toInt()
+                }
         container.addView(sheet, sheetParams)
 
         val decorView =
