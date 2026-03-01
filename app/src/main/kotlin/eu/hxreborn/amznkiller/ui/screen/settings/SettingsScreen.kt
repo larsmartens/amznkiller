@@ -404,12 +404,13 @@ fun SettingsScreen(
                         )
                     },
                     summary = {
-                        val rangeLabel = when (prefs.chartDefaultRange) {
-                            "30" -> "1 Month"
-                            "90" -> "3 Months"
-                            "365" -> "1 Year"
-                            else -> "All Time"
-                        }
+                        val rangeLabel =
+                            when (prefs.chartDefaultRange) {
+                                "30" -> "1 Month"
+                                "90" -> "3 Months"
+                                "365" -> "1 Year"
+                                else -> "All Time"
+                            }
                         Text(text = rangeLabel)
                     },
                     onClick = { showRangeDialog = true },
