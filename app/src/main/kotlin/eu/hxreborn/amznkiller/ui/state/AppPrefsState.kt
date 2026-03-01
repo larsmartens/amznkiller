@@ -13,6 +13,8 @@ data class AppPrefsState(
     val webviewDebugging: Boolean = Prefs.WEBVIEW_DEBUGGING.default,
     val forceDarkWebview: Boolean = Prefs.FORCE_DARK_WEBVIEW.default,
     val priceChartsEnabled: Boolean = Prefs.PRICE_CHARTS_ENABLED.default,
+    val chartDefaultRange: String = Prefs.CHART_DEFAULT_RANGE.default,
+    val chartInteractiveEnabled: Boolean = Prefs.CHART_INTERACTIVE_ENABLED.default,
     val autoUpdate: Boolean = Prefs.AUTO_UPDATE.default,
     val isStale: Boolean = true,
     val darkThemeConfig: DarkThemeConfig = DarkThemeConfig.FOLLOW_SYSTEM,

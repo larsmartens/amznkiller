@@ -68,6 +68,10 @@
     <string name="settings_content_filtering_summary">Inject CSS rules into Amazon app to hide ads and sponsored junk</string>
     <string name="settings_marketplace_insights">Price history charts</string>
     <string name="settings_marketplace_insights_summary">Show Keepa and CamelCamelCamel charts on product pages</string>
+    <string name="settings_chart_default_range">Default chart range</string>
+    <string name="settings_chart_default_range_summary">Initial time range for price history charts</string>
+    <string name="settings_chart_interactive">Interactive charts</string>
+    <string name="settings_chart_interactive_summary">Show button to open full interactive Keepa chart</string>
     <string name="settings_dark_mode">Dark mode (experimental)</string>
     <string name="settings_dark_mode_summary">Apply dark mode to Amazon pages. Requires force stopping Amazon to take effect</string>
     <string name="settings_webview_debugging">WebView debugging</string>

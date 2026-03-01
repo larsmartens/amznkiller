@@ -42,6 +42,8 @@ class PrefsRepositoryImpl(
                         webviewDebugging = Prefs.WEBVIEW_DEBUGGING.read(localPrefs),
                         forceDarkWebview = Prefs.FORCE_DARK_WEBVIEW.read(localPrefs),
                         priceChartsEnabled = Prefs.PRICE_CHARTS_ENABLED.read(localPrefs),
+                        chartDefaultRange = Prefs.CHART_DEFAULT_RANGE.read(localPrefs),
+                        chartInteractiveEnabled = Prefs.CHART_INTERACTIVE_ENABLED.read(localPrefs),
                         autoUpdate = Prefs.AUTO_UPDATE.read(localPrefs),
                         isStale =
                             lastFetched == 0L ||

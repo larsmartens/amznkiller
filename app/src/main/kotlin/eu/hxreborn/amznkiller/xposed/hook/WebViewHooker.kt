@@ -3,6 +3,7 @@ package eu.hxreborn.amznkiller.xposed.hook
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import eu.hxreborn.amznkiller.util.Logger
+import eu.hxreborn.amznkiller.xposed.bridge.ChartBridge
 import eu.hxreborn.amznkiller.xposed.runtime.PageRuntime
 import io.github.libxposed.api.XposedInterface
 import io.github.libxposed.api.XposedInterface.AfterHookCallback
@@ -46,6 +47,9 @@ class PageStartedHooker : XposedInterface.Hooker {
         @AfterInvocation
         fun after(callback: AfterHookCallback) {
             val webView = callback.args[0] as? WebView ?: return
+            runCatching {
+                webView.addJavascriptInterface(ChartBridge(webView), ChartBridge.BRIDGE_NAME)
+            }.onFailure { Logger.log("Failed to inject ChartBridge", it) }
             PageRuntime.onPageStarted(webView)
         }
     }

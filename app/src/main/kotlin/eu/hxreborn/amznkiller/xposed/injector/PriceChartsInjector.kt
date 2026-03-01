@@ -59,6 +59,8 @@ object PriceChartsInjector {
                 put("keepaId", keepaId)
                 put("camelLocale", camelLocale)
                 put("dark", prefs.forceDarkWebview)
+                put("defaultRange", prefs.chartDefaultRange)
+                put("interactiveEnabled", prefs.chartInteractiveEnabled)
             }
         val script =
             ScriptRepository.get(ScriptId.CHARTS) + "\n" + "window.AmznKiller.injectCharts($args);"
