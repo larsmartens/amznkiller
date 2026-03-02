@@ -83,9 +83,7 @@ object KeepaDataScraper {
                             injectInterceptor(view)
                         }
 
-                        private fun injectInterceptor(
-                            view: WebView?,
-                        ) {
+                        private fun injectInterceptor(view: WebView?) {
                             val script =
                                 ScriptRepository.get(
                                     ScriptId.KEEPA_INTERCEPTOR,

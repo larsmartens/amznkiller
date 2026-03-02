@@ -209,9 +209,10 @@ object ChartOverlay {
                     ViewGroup.LayoutParams.MATCH_PARENT,
                 ).apply {
                     topMargin =
-                        (activity.resources.displayMetrics.heightPixels *
-                            0.15)
-                            .toInt()
+                        (
+                            activity.resources
+                                .displayMetrics.heightPixels * 0.15
+                        ).toInt()
                 }
         container.addView(sheet, sheetParams)
 
