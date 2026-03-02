@@ -1,11 +1,13 @@
 package eu.hxreborn.amznkiller.xposed.bridge
 
-import android.app.Activity
 import android.content.Intent
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import eu.hxreborn.amznkiller.prefs.PrefsManager
 import eu.hxreborn.amznkiller.util.Logger
+import eu.hxreborn.amznkiller.xposed.js.ScriptId
+import eu.hxreborn.amznkiller.xposed.js.ScriptRepository
+import eu.hxreborn.amznkiller.xposed.js.WebViewJsExecutor
 import org.json.JSONObject
 import java.lang.ref.WeakReference
 
@@ -19,23 +21,33 @@ class ChartBridge(
         asin: String,
         keepaId: Int,
     ) {
-        Logger.logDebug("ChartBridge: openInteractiveChart asin=$asin keepaId=$keepaId")
+        Logger.logDebug(
+            "ChartBridge: openInteractiveChart asin=$asin keepaId=$keepaId",
+        )
         val webView = webViewRef.get() ?: return
-        val activity = webView.context as? Activity ?: return
         val dark = PrefsManager.forceDarkWebview
-        activity.runOnUiThread {
-            ChartOverlay.show(activity, asin, keepaId, dark)
+        val args =
+            JSONObject().apply {
+                put("asin", asin)
+                put("keepaId", keepaId)
+                put("dark", dark)
+            }
+        val script =
+            ScriptRepository.get(ScriptId.KEEPA_INLINE) +
+                "\n" +
+                "window.AmznKiller.injectKeepaInline($args);"
+        WebViewJsExecutor.evaluate(
+            webView,
+            script,
+            "ChartBridge:keepa_inline",
+        ) {
+            Logger.logDebug("ChartBridge keepa_inline: $it")
         }
     }
 
     @JavascriptInterface
     fun dismissChart() {
         Logger.logDebug("ChartBridge: dismissChart")
-        val webView = webViewRef.get() ?: return
-        val activity = webView.context as? Activity ?: return
-        activity.runOnUiThread {
-            ChartOverlay.dismiss()
-        }
     }
 
     @JavascriptInterface
