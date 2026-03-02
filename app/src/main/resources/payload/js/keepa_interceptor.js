@@ -14,17 +14,59 @@
     } catch (e) { /* bridge unavailable */ }
   }
 
-  function isKeepaApi(url) {
-    if (typeof url !== 'string') return false;
-    // Match Keepa API calls: api.keepa.com, or any URL with /api/ or product data
-    return url.indexOf('api.keepa.com') !== -1 ||
-      url.indexOf('/product') !== -1 ||
-      url.indexOf('/api/') !== -1 ||
-      url.indexOf('keepa.com/api') !== -1 ||
-      (url.indexOf('keepa.com') !== -1 && url.indexOf('.js') === -1 && url.indexOf('.css') === -1 && url.indexOf('.png') === -1);
+  function hasProductData(text) {
+    return text && text.length > 200 &&
+      (text.indexOf('"csv"') !== -1 || text.indexOf('"products"') !== -1);
   }
 
-  // Monkey-patch XMLHttpRequest
+  function tryDecompress(buf, encoding) {
+    return new Response(
+      new Blob([buf]).stream().pipeThrough(new DecompressionStream(encoding))
+    ).text();
+  }
+
+  function handleBinary(buf) {
+    tryDecompress(buf, 'deflate').then(function (text) {
+      if (hasProductData(text)) deliver(text);
+    }).catch(function () {
+      tryDecompress(buf, 'deflate-raw').then(function (text) {
+        if (hasProductData(text)) deliver(text);
+      }).catch(function () {
+        new Blob([buf]).text().then(function (text) {
+          if (hasProductData(text)) deliver(text);
+        }).catch(function () {});
+      });
+    });
+  }
+
+  // 1. Hook WebSocket — Keepa uses wss://push.keepa.com for data delivery
+  var OrigWS = window.WebSocket;
+  window.WebSocket = function (url, protocols) {
+    var ws = protocols ? new OrigWS(url, protocols) : new OrigWS(url);
+
+    ws.addEventListener('message', function (evt) {
+      if (delivered) return;
+      try {
+        var data = evt.data;
+        if (typeof data === 'string') {
+          if (hasProductData(data)) deliver(data);
+        } else if (data instanceof Blob) {
+          data.arrayBuffer().then(handleBinary).catch(function () {});
+        } else if (data instanceof ArrayBuffer) {
+          handleBinary(data);
+        }
+      } catch (e) {}
+    });
+
+    return ws;
+  };
+  window.WebSocket.CONNECTING = OrigWS.CONNECTING;
+  window.WebSocket.OPEN = OrigWS.OPEN;
+  window.WebSocket.CLOSING = OrigWS.CLOSING;
+  window.WebSocket.CLOSED = OrigWS.CLOSED;
+  window.WebSocket.prototype = OrigWS.prototype;
+
+  // 2. Hook XMLHttpRequest
   var origOpen = XMLHttpRequest.prototype.open;
   var origSend = XMLHttpRequest.prototype.send;
 
@@ -35,26 +77,11 @@
 
   XMLHttpRequest.prototype.send = function () {
     var xhr = this;
-    if (isKeepaApi(xhr.__amzk_url)) {
-      var origHandler = xhr.onreadystatechange;
-      xhr.onreadystatechange = function () {
-        if (xhr.readyState === 4 && xhr.status === 200) {
-          try {
-            var text = xhr.responseText;
-            if (text && text.length > 100 && text.indexOf('"csv"') !== -1) {
-              deliver(text);
-            }
-          } catch (e) {}
-        }
-        if (origHandler) origHandler.apply(this, arguments);
-      };
+    if (xhr.__amzk_url && xhr.__amzk_url.indexOf('keepa') !== -1) {
       xhr.addEventListener('load', function () {
-        if (xhr.status === 200) {
+        if (xhr.status === 200 && !delivered) {
           try {
-            var text = xhr.responseText;
-            if (text && text.length > 100 && text.indexOf('"csv"') !== -1) {
-              deliver(text);
-            }
+            if (hasProductData(xhr.responseText)) deliver(xhr.responseText);
           } catch (e) {}
         }
       });
@@ -62,23 +89,51 @@
     return origSend.apply(this, arguments);
   };
 
-  // Monkey-patch fetch
+  // 3. Hook fetch
   var origFetch = window.fetch;
   if (origFetch) {
     window.fetch = function (input, init) {
       var url = typeof input === 'string' ? input : (input && input.url ? input.url : '');
       var promise = origFetch.apply(this, arguments);
-      if (isKeepaApi(url)) {
+      if (url.indexOf('keepa') !== -1) {
         promise.then(function (response) {
-          var clone = response.clone();
-          clone.text().then(function (text) {
-            if (text && text.length > 100 && text.indexOf('"csv"') !== -1) {
-              deliver(text);
-            }
-          }).catch(function () {});
+          if (!delivered) {
+            response.clone().text().then(function (text) {
+              if (hasProductData(text)) deliver(text);
+            }).catch(function () {});
+          }
         }).catch(function () {});
       }
       return promise;
     };
   }
+
+  // 4. Periodic scan for product data in global JS variables
+  var scanCount = 0;
+  var scanInterval = setInterval(function () {
+    scanCount++;
+    if (scanCount > 40 || delivered) {
+      clearInterval(scanInterval);
+      return;
+    }
+    try {
+      var keys = Object.keys(window);
+      for (var i = 0; i < keys.length; i++) {
+        try {
+          var val = window[keys[i]];
+          if (val && typeof val === 'object' && !Array.isArray(val)) {
+            if (val.csv && Array.isArray(val.csv)) {
+              deliver(JSON.stringify({ products: [val] }));
+              return;
+            }
+            if (val.products && Array.isArray(val.products) &&
+              val.products[0] && val.products[0].csv) {
+              deliver(JSON.stringify(val));
+              return;
+            }
+          }
+        } catch (e) {} // some properties may throw on access
+      }
+    } catch (e) {}
+  }, 1000);
 })();

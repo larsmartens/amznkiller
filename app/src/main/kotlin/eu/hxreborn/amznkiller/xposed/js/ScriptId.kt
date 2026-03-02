@@ -8,6 +8,7 @@ enum class ScriptId(
     CHARTS("payload/js/charts.js"),
     UPLOT_LIB("payload/js/uplot.min.js"),
     CHARTS_UPLOT("payload/js/charts_uplot.js"),
+    KEEPA_ENHANCE("payload/js/keepa_enhance.js"),
     KEEPA_INLINE("payload/js/keepa_inline.js"),
     KEEPA_INTERCEPTOR("payload/js/keepa_interceptor.js"),
 }

@@ -14,7 +14,7 @@ import eu.hxreborn.amznkiller.xposed.js.ScriptId
 import eu.hxreborn.amznkiller.xposed.js.ScriptRepository
 
 object KeepaDataScraper {
-    private const val TIMEOUT_MS = 20_000L
+    private const val TIMEOUT_MS = 30_000L
     private val mainHandler = Handler(Looper.getMainLooper())
 
     @Volatile
@@ -52,10 +52,24 @@ object KeepaDataScraper {
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
                 settings.databaseEnabled = true
-                addJavascriptInterface(ScraperBridge(), ChartBridge.BRIDGE_NAME)
+                addJavascriptInterface(
+                    ScraperBridge(),
+                    ChartBridge.BRIDGE_NAME,
+                )
                 webViewClient =
                     object : WebViewClient() {
-                        private var interceptorInjected = false
+                        override fun onPageStarted(
+                            view: WebView?,
+                            url: String?,
+                            favicon: android.graphics.Bitmap?,
+                        ) {
+                            Logger.logDebug(
+                                "KeepaDataScraper: page started $url",
+                            )
+                            // Inject interceptor early so WebSocket
+                            // hook is in place before page JS runs
+                            injectInterceptor(view)
+                        }
 
                         override fun onPageFinished(
                             view: WebView?,
@@ -64,55 +78,58 @@ object KeepaDataScraper {
                             Logger.logDebug(
                                 "KeepaDataScraper: page finished $url",
                             )
+                            // Re-inject (idempotent) in case the
+                            // early injection was too soon
                             injectInterceptor(view)
                         }
 
-                        override fun onPageStarted(
+                        private fun injectInterceptor(
                             view: WebView?,
-                            url: String?,
-                            favicon: android.graphics.Bitmap?,
                         ) {
-                            interceptorInjected = false
-                        }
-
-                        private fun injectInterceptor(view: WebView?) {
-                            if (interceptorInjected) return
-                            interceptorInjected = true
-                            Logger.logDebug(
-                                "KeepaDataScraper: injecting interceptor",
-                            )
                             val script =
-                                ScriptRepository.get(ScriptId.KEEPA_INTERCEPTOR)
-                            view?.evaluateJavascript(script, null)
+                                ScriptRepository.get(
+                                    ScriptId.KEEPA_INTERCEPTOR,
+                                )
+                            view?.evaluateJavascript(
+                                script,
+                                null,
+                            )
                         }
                     }
             }
 
         hiddenWebView = webView
 
-        // Attach to activity so it has a valid context for rendering
         val decorView = activity.window.decorView as? ViewGroup
         decorView?.addView(webView)
 
-        val url = "https://keepa.com/#!product/$keepaId-$asin"
+        val url =
+            "https://keepa.com/#!product/$keepaId-$asin"
         Logger.logDebug("KeepaDataScraper: loading $url")
         webView.loadUrl(url)
 
         // Timeout fallback
-        mainHandler.postDelayed({
-            if (pendingCallback != null) {
-                Logger.logDebug("KeepaDataScraper: timeout, falling back")
-                val cb = pendingCallback
-                pendingCallback = null
-                cleanup()
-                cb?.invoke(null)
-            }
-        }, TIMEOUT_MS)
+        mainHandler.postDelayed(
+            {
+                if (pendingCallback != null) {
+                    Logger.logDebug(
+                        "KeepaDataScraper: timeout after ${TIMEOUT_MS}ms",
+                    )
+                    val cb = pendingCallback
+                    pendingCallback = null
+                    cleanup()
+                    cb?.invoke(null)
+                }
+            },
+            TIMEOUT_MS,
+        )
     }
 
     fun onDataReceived(json: String) {
         mainHandler.post {
-            Logger.logDebug("KeepaDataScraper: data received (${json.length} chars)")
+            Logger.logDebug(
+                "KeepaDataScraper: data received (${json.length} chars)",
+            )
             val cb = pendingCallback
             pendingCallback = null
             cleanup()

@@ -1,9 +1,11 @@
 package eu.hxreborn.amznkiller.xposed.injector
 
+import android.app.Activity
 import android.webkit.WebView
 import eu.hxreborn.amznkiller.prefs.PrefsSnapshot
 import eu.hxreborn.amznkiller.util.Logger
 import eu.hxreborn.amznkiller.xposed.bridge.ChartMode
+import eu.hxreborn.amznkiller.xposed.bridge.KeepaDataScraper
 import eu.hxreborn.amznkiller.xposed.js.ScriptId
 import eu.hxreborn.amznkiller.xposed.js.ScriptRepository
 import eu.hxreborn.amznkiller.xposed.js.WebViewJsExecutor
@@ -53,7 +55,9 @@ object PriceChartsInjector {
         val camelLocale = CAMEL_LOCALES[domain] ?: "us"
         val mode = ChartMode.fromPref(prefs.chartMode)
 
-        Logger.logDebug("PriceChartsInjector: $asin on $domain mode=$mode")
+        Logger.logDebug(
+            "PriceChartsInjector: $asin on $domain mode=$mode",
+        )
 
         when (mode) {
             ChartMode.STATIC -> {
@@ -108,7 +112,8 @@ object PriceChartsInjector {
                 put("defaultRange", prefs.chartDefaultRange)
                 put(
                     "interactiveEnabled",
-                    forceInteractive || prefs.chartInteractiveEnabled,
+                    forceInteractive ||
+                        prefs.chartInteractiveEnabled,
                 )
             }
         val script =
@@ -130,7 +135,9 @@ object PriceChartsInjector {
         asin: String,
         keepaId: Int,
     ) {
-        Logger.logDebug("PriceChartsInjector: injecting Keepa iframe inline")
+        Logger.logDebug(
+            "PriceChartsInjector: injecting Keepa iframe inline",
+        )
         val args =
             JSONObject().apply {
                 put("asin", asin)
@@ -146,10 +153,13 @@ object PriceChartsInjector {
             script,
             "PriceChartsInjector:keepa_inline",
         ) {
-            Logger.logDebug("PriceChartsInjector keepa_inline: $it")
+            Logger.logDebug(
+                "PriceChartsInjector keepa_inline: $it",
+            )
         }
     }
 
+    @Suppress("LongParameterList")
     private fun injectCustom(
         webView: WebView,
         prefs: PrefsSnapshot,
@@ -158,14 +168,7 @@ object PriceChartsInjector {
         keepaId: Int,
         camelLocale: String,
     ) {
-        // Custom mode uses the static chart with interactive controls
-        // enabled (range + type buttons). The previous KeepaDataScraper
-        // approach is unreliable because Keepa's SPA requires
-        // authentication and doesn't fire expected XHR calls in a
-        // headless WebView context.
-        Logger.logDebug(
-            "PriceChartsInjector: custom mode -> static+interactive",
-        )
+        // Show static charts immediately so user sees something
         injectStatic(
             webView,
             prefs,
@@ -175,5 +178,73 @@ object PriceChartsInjector {
             camelLocale,
             forceInteractive = true,
         )
+
+        // Try to scrape real data in the background
+        val activity = webView.context as? Activity
+        if (activity == null) {
+            Logger.logDebug(
+                "PriceChartsInjector: custom no activity context",
+            )
+            return
+        }
+
+        Logger.logDebug(
+            "PriceChartsInjector: custom starting background scrape",
+        )
+        KeepaDataScraper.scrape(
+            activity,
+            asin,
+            keepaId,
+        ) { json ->
+            if (json == null) {
+                Logger.logDebug(
+                    "PriceChartsInjector: custom scraper timeout",
+                )
+                return@scrape
+            }
+
+            Logger.logDebug(
+                "PriceChartsInjector: replacing with uPlot chart",
+            )
+            val keepaValue =
+                org.json.JSONTokener(json).nextValue()
+            val args =
+                JSONObject().apply {
+                    put("asin", asin)
+                    put("domain", domain)
+                    put("keepaId", keepaId)
+                    put("dark", prefs.forceDarkWebview)
+                    put(
+                        "defaultRange",
+                        prefs.chartDefaultRange,
+                    )
+                    put("keepaData", keepaValue)
+                }
+            val removeOld =
+                "(function(){" +
+                    "var e=document.getElementById(" +
+                    "'amznkiller-charts');" +
+                    "if(e)e.remove();" +
+                    "})();"
+            val script =
+                removeOld +
+                    "\n" +
+                    ScriptRepository.get(ScriptId.UPLOT_LIB) +
+                    "\n" +
+                    ScriptRepository.get(
+                        ScriptId.CHARTS_UPLOT,
+                    ) +
+                    "\n" +
+                    "window.AmznKiller.injectUplotChart($args);"
+            WebViewJsExecutor.evaluate(
+                webView,
+                script,
+                "PriceChartsInjector:uplot",
+            ) {
+                Logger.logDebug(
+                    "PriceChartsInjector uplot: $it",
+                )
+            }
+        }
     }
 }

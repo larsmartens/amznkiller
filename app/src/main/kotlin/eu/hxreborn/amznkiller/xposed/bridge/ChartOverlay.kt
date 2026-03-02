@@ -15,6 +15,8 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import eu.hxreborn.amznkiller.util.Logger
+import eu.hxreborn.amznkiller.xposed.js.ScriptId
+import eu.hxreborn.amznkiller.xposed.js.ScriptRepository
 
 object ChartOverlay {
     private var overlayView: View? = null
@@ -51,10 +53,30 @@ object ChartOverlay {
                 }
             }
 
-        val sheetBg = if (dark) Color.parseColor("#1a1a1a") else Color.WHITE
-        val headerBg = if (dark) Color.parseColor("#2a2a2a") else Color.parseColor("#F5F5F5")
-        val titleTextColor = if (dark) Color.parseColor("#e0e0e0") else Color.parseColor("#212121")
-        val closeTextColor = if (dark) Color.parseColor("#aaaaaa") else Color.parseColor("#757575")
+        val sheetBg =
+            if (dark) {
+                Color.parseColor("#1a1a1a")
+            } else {
+                Color.WHITE
+            }
+        val headerBg =
+            if (dark) {
+                Color.parseColor("#2a2a2a")
+            } else {
+                Color.parseColor("#F5F5F5")
+            }
+        val titleTextColor =
+            if (dark) {
+                Color.parseColor("#e0e0e0")
+            } else {
+                Color.parseColor("#212121")
+            }
+        val closeTextColor =
+            if (dark) {
+                Color.parseColor("#aaaaaa")
+            } else {
+                Color.parseColor("#757575")
+            }
 
         val sheet =
             LinearLayout(activity).apply {
@@ -112,6 +134,8 @@ object ChartOverlay {
             }
         sheet.addView(progress)
 
+        val darkFlag = if (dark) "true" else "false"
+
         val webView =
             WebView(activity).apply {
                 settings.javaScriptEnabled = true
@@ -127,14 +151,51 @@ object ChartOverlay {
                         0,
                         1f,
                     )
-                addJavascriptInterface(ChartBridge(this), ChartBridge.BRIDGE_NAME)
+                addJavascriptInterface(
+                    ChartBridge(this),
+                    ChartBridge.BRIDGE_NAME,
+                )
                 webViewClient =
                     object : WebViewClient() {
+                        override fun onPageStarted(
+                            view: WebView?,
+                            url: String?,
+                            favicon: android.graphics.Bitmap?,
+                        ) {
+                            // Inject enhancement script early
+                            // so canvas hook is installed before
+                            // Keepa's GWT chart renders
+                            val script =
+                                "window.__amznkiller_dark=" +
+                                    darkFlag +
+                                    ";\n" +
+                                    ScriptRepository.get(
+                                        ScriptId.KEEPA_ENHANCE,
+                                    )
+                            view?.evaluateJavascript(
+                                script,
+                                null,
+                            )
+                        }
+
                         override fun onPageFinished(
                             view: WebView?,
                             url: String?,
                         ) {
                             progress.visibility = View.GONE
+                            // Re-inject (idempotent) for
+                            // late-loading content
+                            val script =
+                                "window.__amznkiller_dark=" +
+                                    darkFlag +
+                                    ";\n" +
+                                    ScriptRepository.get(
+                                        ScriptId.KEEPA_ENHANCE,
+                                    )
+                            view?.evaluateJavascript(
+                                script,
+                                null,
+                            )
                         }
                     }
             }
@@ -148,7 +209,8 @@ object ChartOverlay {
                     ViewGroup.LayoutParams.MATCH_PARENT,
                 ).apply {
                     topMargin =
-                        (activity.resources.displayMetrics.heightPixels * 0.15)
+                        (activity.resources.displayMetrics.heightPixels *
+                            0.15)
                             .toInt()
                 }
         container.addView(sheet, sheetParams)
@@ -165,7 +227,8 @@ object ChartOverlay {
         overlayView = container
         container.requestFocus()
 
-        val url = "https://keepa.com/#!product/$keepaId-$asin"
+        val url =
+            "https://keepa.com/#!product/$keepaId-$asin"
         Logger.logDebug("ChartOverlay: loading $url")
         webView.loadUrl(url)
     }
