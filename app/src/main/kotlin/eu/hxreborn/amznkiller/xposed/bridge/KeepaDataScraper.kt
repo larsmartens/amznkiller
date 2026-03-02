@@ -14,7 +14,7 @@ import eu.hxreborn.amznkiller.xposed.js.ScriptId
 import eu.hxreborn.amznkiller.xposed.js.ScriptRepository
 
 object KeepaDataScraper {
-    private const val TIMEOUT_MS = 15_000L
+    private const val TIMEOUT_MS = 20_000L
     private val mainHandler = Handler(Looper.getMainLooper())
 
     @Volatile
@@ -51,15 +51,38 @@ object KeepaDataScraper {
                 visibility = View.GONE
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
+                settings.databaseEnabled = true
                 addJavascriptInterface(ScraperBridge(), ChartBridge.BRIDGE_NAME)
                 webViewClient =
                     object : WebViewClient() {
+                        private var interceptorInjected = false
+
                         override fun onPageFinished(
                             view: WebView?,
                             url: String?,
                         ) {
-                            Logger.logDebug("KeepaDataScraper: page finished $url")
-                            val script = ScriptRepository.get(ScriptId.KEEPA_INTERCEPTOR)
+                            Logger.logDebug(
+                                "KeepaDataScraper: page finished $url",
+                            )
+                            injectInterceptor(view)
+                        }
+
+                        override fun onPageStarted(
+                            view: WebView?,
+                            url: String?,
+                            favicon: android.graphics.Bitmap?,
+                        ) {
+                            interceptorInjected = false
+                        }
+
+                        private fun injectInterceptor(view: WebView?) {
+                            if (interceptorInjected) return
+                            interceptorInjected = true
+                            Logger.logDebug(
+                                "KeepaDataScraper: injecting interceptor",
+                            )
+                            val script =
+                                ScriptRepository.get(ScriptId.KEEPA_INTERCEPTOR)
                             view?.evaluateJavascript(script, null)
                         }
                     }

@@ -15,7 +15,13 @@
   }
 
   function isKeepaApi(url) {
-    return typeof url === 'string' && (url.indexOf('/api/') !== -1 || url.indexOf('product') !== -1);
+    if (typeof url !== 'string') return false;
+    // Match Keepa API calls: api.keepa.com, or any URL with /api/ or product data
+    return url.indexOf('api.keepa.com') !== -1 ||
+      url.indexOf('/product') !== -1 ||
+      url.indexOf('/api/') !== -1 ||
+      url.indexOf('keepa.com/api') !== -1 ||
+      (url.indexOf('keepa.com') !== -1 && url.indexOf('.js') === -1 && url.indexOf('.css') === -1 && url.indexOf('.png') === -1);
   }
 
   // Monkey-patch XMLHttpRequest
@@ -33,13 +39,23 @@
       var origHandler = xhr.onreadystatechange;
       xhr.onreadystatechange = function () {
         if (xhr.readyState === 4 && xhr.status === 200) {
-          try { deliver(xhr.responseText); } catch (e) {}
+          try {
+            var text = xhr.responseText;
+            if (text && text.length > 100 && text.indexOf('"csv"') !== -1) {
+              deliver(text);
+            }
+          } catch (e) {}
         }
         if (origHandler) origHandler.apply(this, arguments);
       };
       xhr.addEventListener('load', function () {
         if (xhr.status === 200) {
-          try { deliver(xhr.responseText); } catch (e) {}
+          try {
+            var text = xhr.responseText;
+            if (text && text.length > 100 && text.indexOf('"csv"') !== -1) {
+              deliver(text);
+            }
+          } catch (e) {}
         }
       });
     }
@@ -56,7 +72,9 @@
         promise.then(function (response) {
           var clone = response.clone();
           clone.text().then(function (text) {
-            deliver(text);
+            if (text && text.length > 100 && text.indexOf('"csv"') !== -1) {
+              deliver(text);
+            }
           }).catch(function () {});
         }).catch(function () {});
       }

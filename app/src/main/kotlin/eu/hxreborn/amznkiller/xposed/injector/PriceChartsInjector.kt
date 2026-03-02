@@ -5,6 +5,7 @@ import android.webkit.WebView
 import eu.hxreborn.amznkiller.prefs.PrefsSnapshot
 import eu.hxreborn.amznkiller.util.Logger
 import eu.hxreborn.amznkiller.xposed.bridge.ChartMode
+import eu.hxreborn.amznkiller.xposed.bridge.ChartOverlay
 import eu.hxreborn.amznkiller.xposed.bridge.KeepaDataScraper
 import eu.hxreborn.amznkiller.xposed.js.ScriptId
 import eu.hxreborn.amznkiller.xposed.js.ScriptRepository
@@ -70,14 +71,11 @@ object PriceChartsInjector {
             }
 
             ChartMode.KEEPA_OVERLAY -> {
-                injectStatic(
+                injectKeepaOverlay(
                     webView,
                     prefs,
                     asin,
-                    domain,
                     keepaId,
-                    camelLocale,
-                    forceInteractive = true,
                 )
             }
 
@@ -126,6 +124,24 @@ object PriceChartsInjector {
             "PriceChartsInjector",
         ) {
             Logger.logDebug("PriceChartsInjector static: $it")
+        }
+    }
+
+    private fun injectKeepaOverlay(
+        webView: WebView,
+        prefs: PrefsSnapshot,
+        asin: String,
+        keepaId: Int,
+    ) {
+        val activity = webView.context as? Activity
+        if (activity == null) {
+            Logger.logDebug("PriceChartsInjector: overlay no activity")
+            return
+        }
+        Logger.logDebug("PriceChartsInjector: auto-opening overlay")
+        val dark = prefs.forceDarkWebview
+        activity.runOnUiThread {
+            ChartOverlay.show(activity, asin, keepaId, dark)
         }
     }
 
