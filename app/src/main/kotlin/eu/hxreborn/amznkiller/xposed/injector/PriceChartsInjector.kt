@@ -58,9 +58,15 @@ object PriceChartsInjector {
         Logger.logDebug("PriceChartsInjector: $asin on $domain mode=$mode")
 
         when (mode) {
-            ChartMode.STATIC -> injectStatic(webView, prefs, asin, domain, keepaId, camelLocale)
-            ChartMode.KEEPA_OVERLAY -> injectStatic(webView, prefs, asin, domain, keepaId, camelLocale, forceInteractive = true)
-            ChartMode.CUSTOM -> injectCustom(webView, prefs, asin, domain, keepaId, camelLocale)
+            ChartMode.STATIC ->
+                injectStatic(webView, prefs, asin, domain, keepaId, camelLocale)
+            ChartMode.KEEPA_OVERLAY ->
+                injectStatic(
+                    webView, prefs, asin, domain, keepaId, camelLocale,
+                    forceInteractive = true,
+                )
+            ChartMode.CUSTOM ->
+                injectCustom(webView, prefs, asin, domain, keepaId, camelLocale)
         }
     }
 
@@ -81,12 +87,21 @@ object PriceChartsInjector {
                 put("camelLocale", camelLocale)
                 put("dark", prefs.forceDarkWebview)
                 put("defaultRange", prefs.chartDefaultRange)
-                put("interactiveEnabled", forceInteractive || prefs.chartInteractiveEnabled)
+                put(
+                    "interactiveEnabled",
+                    forceInteractive || prefs.chartInteractiveEnabled,
+                )
             }
         val script =
-            ScriptRepository.get(ScriptId.CHARTS) + "\n" + "window.AmznKiller.injectCharts($args);"
-        WebViewJsExecutor.evaluate(webView, script, "PriceChartsInjector") {
-            Logger.logDebug("PriceChartsInjector static result: $it")
+            ScriptRepository.get(ScriptId.CHARTS) +
+                "\n" +
+                "window.AmznKiller.injectCharts($args);"
+        WebViewJsExecutor.evaluate(
+            webView,
+            script,
+            "PriceChartsInjector",
+        ) {
+            Logger.logDebug("PriceChartsInjector static: $it")
         }
     }
 
@@ -100,19 +115,25 @@ object PriceChartsInjector {
     ) {
         val activity = webView.context as? Activity
         if (activity == null) {
-            Logger.logDebug("PriceChartsInjector: no activity, falling back to static")
-            injectStatic(webView, prefs, asin, domain, keepaId, camelLocale)
+            Logger.logDebug("PriceChartsInjector: no activity context")
+            injectStatic(
+                webView, prefs, asin, domain, keepaId, camelLocale,
+            )
             return
         }
 
         KeepaDataScraper.scrape(activity, asin, keepaId) { json ->
             if (json == null) {
-                Logger.logDebug("PriceChartsInjector: scraper returned null, falling back to static")
-                injectStatic(webView, prefs, asin, domain, keepaId, camelLocale)
+                Logger.logDebug("PriceChartsInjector: scraper timeout")
+                injectStatic(
+                    webView, prefs, asin, domain, keepaId, camelLocale,
+                )
                 return@scrape
             }
 
-            Logger.logDebug("PriceChartsInjector: injecting uPlot chart")
+            Logger.logDebug("PriceChartsInjector: injecting uPlot")
+            val keepaValue =
+                org.json.JSONTokener(json).nextValue()
             val args =
                 JSONObject().apply {
                     put("asin", asin)
@@ -120,14 +141,20 @@ object PriceChartsInjector {
                     put("keepaId", keepaId)
                     put("dark", prefs.forceDarkWebview)
                     put("defaultRange", prefs.chartDefaultRange)
-                    put("keepaData", org.json.JSONTokener(json).nextValue())
+                    put("keepaData", keepaValue)
                 }
             val script =
-                ScriptRepository.get(ScriptId.UPLOT_LIB) + "\n" +
-                    ScriptRepository.get(ScriptId.CHARTS_UPLOT) + "\n" +
+                ScriptRepository.get(ScriptId.UPLOT_LIB) +
+                    "\n" +
+                    ScriptRepository.get(ScriptId.CHARTS_UPLOT) +
+                    "\n" +
                     "window.AmznKiller.injectUplotChart($args);"
-            WebViewJsExecutor.evaluate(webView, script, "PriceChartsInjector:uplot") {
-                Logger.logDebug("PriceChartsInjector uplot result: $it")
+            WebViewJsExecutor.evaluate(
+                webView,
+                script,
+                "PriceChartsInjector:uplot",
+            ) {
+                Logger.logDebug("PriceChartsInjector uplot: $it")
             }
         }
     }
