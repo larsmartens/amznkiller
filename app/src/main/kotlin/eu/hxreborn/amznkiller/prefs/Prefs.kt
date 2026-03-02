@@ -21,6 +21,7 @@ object Prefs {
     val PRICE_CHARTS_ENABLED = BoolPref("price_charts_enabled", false)
     val CHART_DEFAULT_RANGE = StringPref("chart_default_range", "all")
     val CHART_INTERACTIVE_ENABLED = BoolPref("chart_interactive_enabled", true)
+    val CHART_MODE = StringPref("chart_mode", "static")
 
     val LAST_REFRESH_FAILED = BoolPref("last_refresh_failed", false)
     val AUTO_UPDATE = BoolPref("auto_update", true)
@@ -41,6 +42,7 @@ object Prefs {
             PRICE_CHARTS_ENABLED,
             CHART_DEFAULT_RANGE,
             CHART_INTERACTIVE_ENABLED,
+            CHART_MODE,
             AUTO_UPDATE,
             DARK_THEME_CONFIG,
             USE_DYNAMIC_COLOR,

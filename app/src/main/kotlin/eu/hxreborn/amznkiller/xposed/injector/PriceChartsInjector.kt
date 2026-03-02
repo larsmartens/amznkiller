@@ -1,8 +1,11 @@
 package eu.hxreborn.amznkiller.xposed.injector
 
+import android.app.Activity
 import android.webkit.WebView
 import eu.hxreborn.amznkiller.prefs.PrefsSnapshot
 import eu.hxreborn.amznkiller.util.Logger
+import eu.hxreborn.amznkiller.xposed.bridge.ChartMode
+import eu.hxreborn.amznkiller.xposed.bridge.KeepaDataScraper
 import eu.hxreborn.amznkiller.xposed.js.ScriptId
 import eu.hxreborn.amznkiller.xposed.js.ScriptRepository
 import eu.hxreborn.amznkiller.xposed.js.WebViewJsExecutor
@@ -50,8 +53,26 @@ object PriceChartsInjector {
         val domain = amazon.domain ?: return
         val keepaId = KEEPA_DOMAINS[domain] ?: 1
         val camelLocale = CAMEL_LOCALES[domain] ?: "us"
+        val mode = ChartMode.fromPref(prefs.chartMode)
 
-        Logger.logDebug("PriceChartsInjector: $asin on $domain")
+        Logger.logDebug("PriceChartsInjector: $asin on $domain mode=$mode")
+
+        when (mode) {
+            ChartMode.STATIC -> injectStatic(webView, prefs, asin, domain, keepaId, camelLocale)
+            ChartMode.KEEPA_OVERLAY -> injectStatic(webView, prefs, asin, domain, keepaId, camelLocale, forceInteractive = true)
+            ChartMode.CUSTOM -> injectCustom(webView, prefs, asin, domain, keepaId, camelLocale)
+        }
+    }
+
+    private fun injectStatic(
+        webView: WebView,
+        prefs: PrefsSnapshot,
+        asin: String,
+        domain: String,
+        keepaId: Int,
+        camelLocale: String,
+        forceInteractive: Boolean = false,
+    ) {
         val args =
             JSONObject().apply {
                 put("asin", asin)
@@ -60,12 +81,54 @@ object PriceChartsInjector {
                 put("camelLocale", camelLocale)
                 put("dark", prefs.forceDarkWebview)
                 put("defaultRange", prefs.chartDefaultRange)
-                put("interactiveEnabled", prefs.chartInteractiveEnabled)
+                put("interactiveEnabled", forceInteractive || prefs.chartInteractiveEnabled)
             }
         val script =
             ScriptRepository.get(ScriptId.CHARTS) + "\n" + "window.AmznKiller.injectCharts($args);"
         WebViewJsExecutor.evaluate(webView, script, "PriceChartsInjector") {
-            Logger.logDebug("PriceChartsInjector result: $it")
+            Logger.logDebug("PriceChartsInjector static result: $it")
+        }
+    }
+
+    private fun injectCustom(
+        webView: WebView,
+        prefs: PrefsSnapshot,
+        asin: String,
+        domain: String,
+        keepaId: Int,
+        camelLocale: String,
+    ) {
+        val activity = webView.context as? Activity
+        if (activity == null) {
+            Logger.logDebug("PriceChartsInjector: no activity, falling back to static")
+            injectStatic(webView, prefs, asin, domain, keepaId, camelLocale)
+            return
+        }
+
+        KeepaDataScraper.scrape(activity, asin, keepaId) { json ->
+            if (json == null) {
+                Logger.logDebug("PriceChartsInjector: scraper returned null, falling back to static")
+                injectStatic(webView, prefs, asin, domain, keepaId, camelLocale)
+                return@scrape
+            }
+
+            Logger.logDebug("PriceChartsInjector: injecting uPlot chart")
+            val args =
+                JSONObject().apply {
+                    put("asin", asin)
+                    put("domain", domain)
+                    put("keepaId", keepaId)
+                    put("dark", prefs.forceDarkWebview)
+                    put("defaultRange", prefs.chartDefaultRange)
+                    put("keepaData", org.json.JSONTokener(json).nextValue())
+                }
+            val script =
+                ScriptRepository.get(ScriptId.UPLOT_LIB) + "\n" +
+                    ScriptRepository.get(ScriptId.CHARTS_UPLOT) + "\n" +
+                    "window.AmznKiller.injectUplotChart($args);"
+            WebViewJsExecutor.evaluate(webView, script, "PriceChartsInjector:uplot") {
+                Logger.logDebug("PriceChartsInjector uplot result: $it")
+            }
         }
     }
 }

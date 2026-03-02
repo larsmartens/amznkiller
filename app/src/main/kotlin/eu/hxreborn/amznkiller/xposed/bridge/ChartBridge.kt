@@ -22,8 +22,9 @@ class ChartBridge(
         Logger.logDebug("ChartBridge: openInteractiveChart asin=$asin keepaId=$keepaId")
         val webView = webViewRef.get() ?: return
         val activity = webView.context as? Activity ?: return
+        val dark = PrefsManager.forceDarkWebview
         activity.runOnUiThread {
-            ChartOverlay.show(activity, asin, keepaId)
+            ChartOverlay.show(activity, asin, keepaId, dark)
         }
     }
 
@@ -57,12 +58,19 @@ class ChartBridge(
     }
 
     @JavascriptInterface
+    fun onKeepaData(json: String) {
+        Logger.logDebug("ChartBridge: onKeepaData received (${json.length} chars)")
+        KeepaDataScraper.onDataReceived(json)
+    }
+
+    @JavascriptInterface
     fun getPrefs(): String {
         val snap = PrefsManager.snapshot()
         return JSONObject()
             .apply {
                 put("defaultRange", snap.chartDefaultRange)
                 put("interactiveEnabled", snap.chartInteractiveEnabled)
+                put("chartMode", snap.chartMode)
             }.toString()
     }
 

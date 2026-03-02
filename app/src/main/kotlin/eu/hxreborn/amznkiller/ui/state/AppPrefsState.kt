@@ -15,6 +15,7 @@ data class AppPrefsState(
     val priceChartsEnabled: Boolean = Prefs.PRICE_CHARTS_ENABLED.default,
     val chartDefaultRange: String = Prefs.CHART_DEFAULT_RANGE.default,
     val chartInteractiveEnabled: Boolean = Prefs.CHART_INTERACTIVE_ENABLED.default,
+    val chartMode: String = Prefs.CHART_MODE.default,
     val autoUpdate: Boolean = Prefs.AUTO_UPDATE.default,
     val isStale: Boolean = true,
     val darkThemeConfig: DarkThemeConfig = DarkThemeConfig.FOLLOW_SYSTEM,

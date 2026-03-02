@@ -30,6 +30,7 @@ import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Timeline
 import androidx.compose.material.icons.outlined.TouchApp
+import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.TrendingUp
 import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.DeveloperMode
@@ -120,6 +121,7 @@ fun SettingsScreen(
     var showThemeDialog by remember { mutableStateOf(false) }
     var showUrlDialog by remember { mutableStateOf(false) }
     var showRangeDialog by remember { mutableStateOf(false) }
+    var showChartModeDialog by remember { mutableStateOf(false) }
 
     if (showUrlDialog) {
         SelectorUrlDialog(
@@ -140,6 +142,17 @@ fun SettingsScreen(
                 showRangeDialog = false
             },
             onDismiss = { showRangeDialog = false },
+        )
+    }
+
+    if (showChartModeDialog) {
+        ChartModeDialog(
+            currentMode = prefs.chartMode,
+            onSelect = { mode ->
+                viewModel.savePref(Prefs.CHART_MODE, mode)
+                showChartModeDialog = false
+            },
+            onDismiss = { showChartModeDialog = false },
         )
     }
 
@@ -352,7 +365,7 @@ fun SettingsScreen(
                     },
                 )
 
-                val displayItemCount = 4
+                val displayItemCount = 5
                 val chartsShape = shapeForPosition(displayItemCount, 0)
                 switchPreference(
                     modifier = Modifier.padding(horizontal = 8.dp).background(color = surface, shape = chartsShape).clip(chartsShape),
@@ -383,7 +396,41 @@ fun SettingsScreen(
 
                 item { Spacer(Modifier.height(2.dp)) }
 
-                val chartRangeShape = shapeForPosition(displayItemCount, 1)
+                val chartModeShape = shapeForPosition(displayItemCount, 1)
+                preference(
+                    modifier =
+                        Modifier
+                            .padding(horizontal = 8.dp)
+                            .background(color = surface, shape = chartModeShape)
+                            .clip(chartModeShape),
+                    key = "chart_mode",
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Outlined.BarChart,
+                            contentDescription = null,
+                        )
+                    },
+                    title = {
+                        Text(
+                            text = stringResource(R.string.settings_chart_mode),
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    },
+                    summary = {
+                        val modeLabel =
+                            when (prefs.chartMode) {
+                                "custom" -> stringResource(R.string.settings_chart_mode_custom)
+                                "keepa_overlay" -> stringResource(R.string.settings_chart_mode_keepa_overlay)
+                                else -> stringResource(R.string.settings_chart_mode_static)
+                            }
+                        Text(text = modeLabel)
+                    },
+                    onClick = { showChartModeDialog = true },
+                )
+
+                item { Spacer(Modifier.height(2.dp)) }
+
+                val chartRangeShape = shapeForPosition(displayItemCount, 2)
                 preference(
                     modifier =
                         Modifier
@@ -418,7 +465,7 @@ fun SettingsScreen(
 
                 item { Spacer(Modifier.height(2.dp)) }
 
-                val interactiveShape = shapeForPosition(displayItemCount, 2)
+                val interactiveShape = shapeForPosition(displayItemCount, 3)
                 switchPreference(
                     modifier =
                         Modifier
@@ -449,7 +496,7 @@ fun SettingsScreen(
 
                 item { Spacer(Modifier.height(2.dp)) }
 
-                val darkModeShape = shapeForPosition(displayItemCount, 3)
+                val darkModeShape = shapeForPosition(displayItemCount, 4)
                 switchPreference(
                     modifier = Modifier.padding(horizontal = 8.dp).background(color = surface, shape = darkModeShape).clip(darkModeShape),
                     key = "force_dark_webview",
@@ -742,6 +789,59 @@ private fun ChartRangeDialog(
                     ) {
                         RadioButton(
                             selected = option == currentRange,
+                            onClick = null,
+                        )
+                        Spacer(modifier = Modifier.padding(start = 16.dp))
+                        Text(
+                            text = labels[index],
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(android.R.string.cancel))
+            }
+        },
+    )
+}
+
+@Composable
+private fun ChartModeDialog(
+    currentMode: String,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val options = listOf("static", "custom", "keepa_overlay")
+    val labels =
+        listOf(
+            stringResource(R.string.settings_chart_mode_static),
+            stringResource(R.string.settings_chart_mode_custom),
+            stringResource(R.string.settings_chart_mode_keepa_overlay),
+        )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.settings_chart_mode)) },
+        text = {
+            Column(modifier = Modifier.selectableGroup()) {
+                options.forEachIndexed { index, option ->
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(56.dp)
+                                .selectable(
+                                    selected = option == currentMode,
+                                    onClick = { onSelect(option) },
+                                    role = Role.RadioButton,
+                                ).padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(
+                            selected = option == currentMode,
                             onClick = null,
                         )
                         Spacer(modifier = Modifier.padding(start = 16.dp))

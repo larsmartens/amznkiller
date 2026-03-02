@@ -44,6 +44,7 @@ class PrefsRepositoryImpl(
                         priceChartsEnabled = Prefs.PRICE_CHARTS_ENABLED.read(localPrefs),
                         chartDefaultRange = Prefs.CHART_DEFAULT_RANGE.read(localPrefs),
                         chartInteractiveEnabled = Prefs.CHART_INTERACTIVE_ENABLED.read(localPrefs),
+                        chartMode = Prefs.CHART_MODE.read(localPrefs),
                         autoUpdate = Prefs.AUTO_UPDATE.read(localPrefs),
                         isStale =
                             lastFetched == 0L ||

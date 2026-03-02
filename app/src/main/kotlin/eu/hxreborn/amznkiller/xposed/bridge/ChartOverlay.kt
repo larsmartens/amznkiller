@@ -25,6 +25,7 @@ object ChartOverlay {
         activity: Activity,
         asin: String,
         keepaId: Int,
+        dark: Boolean = false,
     ) {
         if (overlayView != null) dismiss()
 
@@ -50,10 +51,15 @@ object ChartOverlay {
                 }
             }
 
+        val sheetBg = if (dark) Color.parseColor("#1a1a1a") else Color.WHITE
+        val headerBg = if (dark) Color.parseColor("#2a2a2a") else Color.parseColor("#F5F5F5")
+        val titleTextColor = if (dark) Color.parseColor("#e0e0e0") else Color.parseColor("#212121")
+        val closeTextColor = if (dark) Color.parseColor("#aaaaaa") else Color.parseColor("#757575")
+
         val sheet =
             LinearLayout(activity).apply {
                 orientation = LinearLayout.VERTICAL
-                setBackgroundColor(Color.WHITE)
+                setBackgroundColor(sheetBg)
                 isClickable = true
                 elevation = dp(8).toFloat()
             }
@@ -63,14 +69,14 @@ object ChartOverlay {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
                 setPadding(dp(16), dp(12), dp(8), dp(12))
-                setBackgroundColor(Color.parseColor("#F5F5F5"))
+                setBackgroundColor(headerBg)
             }
 
         val titleView =
             TextView(activity).apply {
                 text = "Keepa Price History"
                 textSize = 16f
-                setTextColor(Color.parseColor("#212121"))
+                setTextColor(titleTextColor)
                 layoutParams =
                     LinearLayout.LayoutParams(
                         0,
@@ -84,7 +90,7 @@ object ChartOverlay {
             TextView(activity).apply {
                 text = "\u2715"
                 textSize = 20f
-                setTextColor(Color.parseColor("#757575"))
+                setTextColor(closeTextColor)
                 setPadding(dp(12), dp(8), dp(12), dp(8))
                 setOnClickListener { dismiss() }
             }
@@ -121,6 +127,7 @@ object ChartOverlay {
                         0,
                         1f,
                     )
+                addJavascriptInterface(ChartBridge(this), ChartBridge.BRIDGE_NAME)
                 webViewClient =
                     object : WebViewClient() {
                         override fun onPageFinished(
