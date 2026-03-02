@@ -58,15 +58,39 @@ object PriceChartsInjector {
         Logger.logDebug("PriceChartsInjector: $asin on $domain mode=$mode")
 
         when (mode) {
-            ChartMode.STATIC ->
-                injectStatic(webView, prefs, asin, domain, keepaId, camelLocale)
-            ChartMode.KEEPA_OVERLAY ->
+            ChartMode.STATIC -> {
                 injectStatic(
-                    webView, prefs, asin, domain, keepaId, camelLocale,
+                    webView,
+                    prefs,
+                    asin,
+                    domain,
+                    keepaId,
+                    camelLocale,
+                )
+            }
+
+            ChartMode.KEEPA_OVERLAY -> {
+                injectStatic(
+                    webView,
+                    prefs,
+                    asin,
+                    domain,
+                    keepaId,
+                    camelLocale,
                     forceInteractive = true,
                 )
-            ChartMode.CUSTOM ->
-                injectCustom(webView, prefs, asin, domain, keepaId, camelLocale)
+            }
+
+            ChartMode.CUSTOM -> {
+                injectCustom(
+                    webView,
+                    prefs,
+                    asin,
+                    domain,
+                    keepaId,
+                    camelLocale,
+                )
+            }
         }
     }
 
@@ -117,7 +141,12 @@ object PriceChartsInjector {
         if (activity == null) {
             Logger.logDebug("PriceChartsInjector: no activity context")
             injectStatic(
-                webView, prefs, asin, domain, keepaId, camelLocale,
+                webView,
+                prefs,
+                asin,
+                domain,
+                keepaId,
+                camelLocale,
             )
             return
         }
@@ -126,7 +155,12 @@ object PriceChartsInjector {
             if (json == null) {
                 Logger.logDebug("PriceChartsInjector: scraper timeout")
                 injectStatic(
-                    webView, prefs, asin, domain, keepaId, camelLocale,
+                    webView,
+                    prefs,
+                    asin,
+                    domain,
+                    keepaId,
+                    camelLocale,
                 )
                 return@scrape
             }

@@ -9,7 +9,6 @@ enum class ChartMode(
     ;
 
     companion object {
-        fun fromPref(pref: String) =
-            entries.firstOrNull { it.value == pref } ?: STATIC
+        fun fromPref(pref: String) = entries.firstOrNull { it.value == pref } ?: STATIC
     }
 }
