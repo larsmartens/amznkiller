@@ -15,7 +15,6 @@
     'amazon.it': 'it', 'amazon.es': 'es', 'amazon.com.au': 'au'
   };
 
-  var RANGE_MAP = { '30': '1M', '90': '3M', '365': '1Y', 'all': 'ALL' };
   var RANGE_DAYS = { '30': 30, '90': 90, '365': 365, 'all': 0 };
   var TYPE_PARAMS = {
     'amazon': { amazon: 1, new: 0, used: 0 },
@@ -24,9 +23,12 @@
     'all':    { amazon: 1, new: 1, used: 1 }
   };
 
+  // Build cssText from object, all values get !important to survive Amazon's CSS
   function css(obj) {
     var s = '';
-    for (var k in obj) s += k + ':' + obj[k] + ';';
+    for (var k in obj) {
+      if (obj.hasOwnProperty(k)) s += k + ':' + obj[k] + ' !important;';
+    }
     return s;
   }
 
@@ -67,85 +69,109 @@
         '/amazon-new-used.png?force=1&legend=1&tp=all&w=725&h=400';
     }
 
+    // Inject styles scoped under #amznkiller-charts
+    if (!document.getElementById('amznkiller-charts-style')) {
+      var styleEl = document.createElement('style');
+      styleEl.id = 'amznkiller-charts-style';
+      styleEl.textContent = [
+        '@keyframes amzk-spin{to{transform:translate(-50%,-50%) rotate(360deg)}}',
+        '#amznkiller-charts *{box-sizing:border-box !important}',
+        '#amznkiller-charts button{-webkit-appearance:none !important;appearance:none !important;margin:0 !important;line-height:normal !important;min-width:0 !important;min-height:0 !important}'
+      ].join('\n');
+      document.head.appendChild(styleEl);
+    }
+
     // Container
     var c = document.createElement('div');
     c.id = 'amznkiller-charts';
     c.style.cssText = css({
       margin: '16px 0', padding: '12px', 'border-radius': '8px',
       border: '1px solid ' + borderColor, background: bgColor,
-      'font-family': '-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif'
+      'font-family': '-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif',
+      display: 'block', width: '100%'
     });
 
     // Header row
     var headerRow = document.createElement('div');
     headerRow.style.cssText = css({
-      display: 'flex', 'align-items': 'center', 'justify-content': 'space-between',
-      'margin-bottom': '8px'
+      display: 'flex', 'flex-direction': 'row', 'align-items': 'center',
+      'justify-content': 'space-between', 'margin-bottom': '8px'
     });
 
-    var title = document.createElement('div');
+    var title = document.createElement('span');
     title.style.cssText = css({
-      'font-weight': 'bold', 'font-size': '14px', color: titleColor
+      'font-weight': 'bold', 'font-size': '14px', color: titleColor, display: 'inline'
     });
     title.textContent = 'Price History';
     headerRow.appendChild(title);
 
-    var headerBtns = document.createElement('div');
-    headerBtns.style.cssText = css({ display: 'flex', gap: '6px' });
-
     // Share button
-    var shareBtn = document.createElement('button');
+    var shareBtn = document.createElement('span');
     shareBtn.textContent = 'Share';
     shareBtn.style.cssText = css({
       background: btnBg, border: 'none', 'border-radius': '4px',
-      padding: '4px 10px', 'font-size': '12px', color: btnColor, cursor: 'pointer'
+      padding: '4px 10px', 'font-size': '12px', color: btnColor,
+      cursor: 'pointer', display: 'inline-block'
     });
-    shareBtn.onclick = function () {
+    shareBtn.onclick = function (e) {
+      e.preventDefault(); e.stopPropagation();
       var productUrl = window.location.href;
       var productTitle = document.title || 'Amazon Product';
-      if (typeof AmznKillerBridge !== 'undefined' && AmznKillerBridge.shareProduct) {
-        AmznKillerBridge.shareProduct(productUrl, productTitle);
-      }
+      try {
+        if (typeof AmznKillerBridge !== 'undefined') {
+          AmznKillerBridge.shareProduct(productUrl, productTitle);
+        }
+      } catch (err) { /* bridge unavailable */ }
     };
-    headerBtns.appendChild(shareBtn);
-    headerRow.appendChild(headerBtns);
+    headerRow.appendChild(shareBtn);
     c.appendChild(headerRow);
 
-    // Controls row
+    // Controls row — use a single row with inline-block spans as buttons
     var controls = document.createElement('div');
     controls.style.cssText = css({
-      display: 'flex', 'align-items': 'center', 'justify-content': 'space-between',
-      'margin-bottom': '10px', 'flex-wrap': 'wrap', gap: '6px'
+      display: 'flex', 'flex-direction': 'row', 'align-items': 'center',
+      'justify-content': 'space-between', 'margin-bottom': '10px',
+      'flex-wrap': 'wrap', gap: '6px'
     });
 
     function makeButtonGroup(items, activeKey, onChange) {
       var group = document.createElement('div');
-      group.style.cssText = css({ display: 'flex', gap: '2px' });
-      var buttons = {};
-      items.forEach(function (item) {
-        var btn = document.createElement('button');
-        btn.textContent = item.label;
-        btn.dataset.key = item.key;
-        var isActive = item.key === activeKey;
-        btn.style.cssText = css({
-          background: isActive ? btnActiveBg : btnBg,
-          color: isActive ? btnActiveColor : btnColor,
-          border: 'none', 'border-radius': '4px', padding: '4px 10px',
-          'font-size': '11px', 'font-weight': isActive ? '600' : '400',
-          cursor: 'pointer', transition: 'all 0.15s ease'
-        });
-        btn.onclick = function () {
-          onChange(item.key);
-          for (var k in buttons) {
-            var a = k === item.key;
-            buttons[k].style.background = a ? btnActiveBg : btnBg;
-            buttons[k].style.color = a ? btnActiveColor : btnColor;
-            buttons[k].style.fontWeight = a ? '600' : '400';
-          }
-        };
-        buttons[item.key] = btn;
-        group.appendChild(btn);
+      group.style.cssText = css({
+        display: 'inline-flex', 'flex-direction': 'row', gap: '2px',
+        'flex-wrap': 'nowrap'
       });
+      var buttons = {};
+      for (var i = 0; i < items.length; i++) {
+        (function (item) {
+          var btn = document.createElement('span');
+          btn.textContent = item.label;
+          var isActive = item.key === activeKey;
+          btn.style.cssText = css({
+            background: isActive ? btnActiveBg : btnBg,
+            color: isActive ? btnActiveColor : btnColor,
+            border: 'none', 'border-radius': '4px', padding: '5px 12px',
+            'font-size': '11px', 'font-weight': isActive ? '600' : '400',
+            cursor: 'pointer', display: 'inline-block',
+            'text-align': 'center', 'white-space': 'nowrap',
+            'user-select': 'none', '-webkit-user-select': 'none',
+            'line-height': '1.2'
+          });
+          btn.onclick = function (e) {
+            e.preventDefault(); e.stopPropagation();
+            onChange(item.key);
+            for (var k in buttons) {
+              if (buttons.hasOwnProperty(k)) {
+                var a = k === item.key;
+                buttons[k].style.setProperty('background', a ? btnActiveBg : btnBg, 'important');
+                buttons[k].style.setProperty('color', a ? btnActiveColor : btnColor, 'important');
+                buttons[k].style.setProperty('font-weight', a ? '600' : '400', 'important');
+              }
+            }
+          };
+          buttons[item.key] = btn;
+          group.appendChild(btn);
+        })(items[i]);
+      }
       return group;
     }
 
@@ -175,25 +201,17 @@
     var keepaWrap = document.createElement('div');
     keepaWrap.style.cssText = css({
       position: 'relative', 'margin-bottom': '8px', 'min-height': '120px',
-      'touch-action': 'pinch-zoom', overflow: 'hidden', 'border-radius': '4px'
+      overflow: 'hidden', 'border-radius': '4px'
     });
 
     var spinner = document.createElement('div');
     spinner.style.cssText = css({
       position: 'absolute', top: '50%', left: '50%',
-      transform: 'translate(-50%,-50%)',
+      transform: 'translate(-50%,-50%)', 'z-index': '2',
       width: '24px', height: '24px', border: '3px solid ' + borderColor,
       'border-top-color': btnActiveBg, 'border-radius': '50%',
       animation: 'amzk-spin 0.8s linear infinite', display: 'none'
     });
-
-    // Inject spinner keyframes
-    if (!document.getElementById('amznkiller-charts-style')) {
-      var styleEl = document.createElement('style');
-      styleEl.id = 'amznkiller-charts-style';
-      styleEl.textContent = '@keyframes amzk-spin{to{transform:translate(-50%,-50%) rotate(360deg)}}';
-      document.head.appendChild(styleEl);
-    }
 
     keepaWrap.appendChild(spinner);
 
@@ -207,7 +225,7 @@
     keepaImg.src = buildKeepaUrl(currentRange, currentType);
     keepaImg.style.cssText = css({
       width: '100%', height: 'auto', 'border-radius': '4px',
-      filter: darkFilter, transition: 'opacity 0.3s ease'
+      filter: darkFilter, transition: 'opacity 0.3s ease', display: 'block'
     });
     keepaImg.alt = 'Keepa chart for ' + asin;
     keepaImg.onerror = function () { keepaWrap.style.display = 'none'; };
@@ -216,21 +234,21 @@
     keepaWrap.appendChild(keepaImg);
     c.appendChild(keepaWrap);
 
+    // Update chart: swap src directly, use img's own onload instead of Image()
     function updateKeepaImage() {
       var newUrl = buildKeepaUrl(currentRange, currentType);
-      spinner.style.display = 'block';
-      keepaImg.style.opacity = '0.4';
-      var tempImg = new Image();
-      tempImg.onload = function () {
-        keepaImg.src = newUrl;
-        keepaImg.style.opacity = '1';
-        spinner.style.display = 'none';
+      spinner.style.setProperty('display', 'block', 'important');
+      keepaImg.style.setProperty('opacity', '0.4', 'important');
+      keepaImg.onload = function () {
+        keepaImg.style.setProperty('opacity', '1', 'important');
+        spinner.style.setProperty('display', 'none', 'important');
+        keepaImg.onload = null;
       };
-      tempImg.onerror = function () {
-        keepaImg.style.opacity = '1';
-        spinner.style.display = 'none';
+      keepaImg.onerror = function () {
+        keepaImg.style.setProperty('opacity', '1', 'important');
+        spinner.style.setProperty('display', 'none', 'important');
       };
-      tempImg.src = newUrl;
+      keepaImg.src = newUrl;
     }
 
     // CamelCamelCamel chart
@@ -252,7 +270,8 @@
     var camelImg = document.createElement('img');
     camelImg.src = buildCamelUrl();
     camelImg.style.cssText = css({
-      width: '100%', height: 'auto', 'border-radius': '4px', filter: darkFilter
+      width: '100%', height: 'auto', 'border-radius': '4px',
+      filter: darkFilter, display: 'block'
     });
     camelImg.alt = 'CamelCamelCamel chart for ' + asin;
     camelImg.onerror = function () { camelWrap.style.display = 'none'; };
@@ -262,19 +281,29 @@
     camelWrap.appendChild(camelLink);
     c.appendChild(camelWrap);
 
-    // Interactive chart button
+    // Interactive chart button — fallback to opening URL in browser if bridge missing
     if (interactiveEnabled) {
-      var interactiveBtn = document.createElement('button');
+      var keepaPageUrl = 'https://keepa.com/#!product/' + keepaId + '-' + asin;
+      var interactiveBtn = document.createElement('span');
       interactiveBtn.textContent = 'Open Interactive Chart';
       interactiveBtn.style.cssText = css({
         width: '100%', padding: '10px', background: btnActiveBg,
         color: '#fff', border: 'none', 'border-radius': '6px',
         'font-size': '13px', 'font-weight': '600', cursor: 'pointer',
-        'margin-top': '4px'
+        'margin-top': '4px', display: 'block', 'text-align': 'center',
+        'user-select': 'none', '-webkit-user-select': 'none'
       });
-      interactiveBtn.onclick = function () {
-        if (typeof AmznKillerBridge !== 'undefined' && AmznKillerBridge.openInteractiveChart) {
-          AmznKillerBridge.openInteractiveChart(asin, keepaId);
+      interactiveBtn.onclick = function (e) {
+        e.preventDefault(); e.stopPropagation();
+        var bridgeOk = false;
+        try {
+          if (typeof AmznKillerBridge !== 'undefined' && AmznKillerBridge.openInteractiveChart) {
+            AmznKillerBridge.openInteractiveChart(asin, keepaId);
+            bridgeOk = true;
+          }
+        } catch (err) { /* bridge call failed */ }
+        if (!bridgeOk) {
+          window.open(keepaPageUrl, '_blank');
         }
       };
       c.appendChild(interactiveBtn);
