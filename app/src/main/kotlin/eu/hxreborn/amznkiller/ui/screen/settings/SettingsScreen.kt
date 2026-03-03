@@ -152,7 +152,8 @@ fun SettingsScreen(
             onSelect = { mode ->
                 viewModel.savePref(Prefs.CHART_MODE, mode)
                 showChartModeDialog = false
-                context.getSystemService<ActivityManager>()
+                context
+                    .getSystemService<ActivityManager>()
                     ?.killBackgroundProcesses("com.amazon.mShop.android.shopping")
             },
             onDismiss = { showChartModeDialog = false },
