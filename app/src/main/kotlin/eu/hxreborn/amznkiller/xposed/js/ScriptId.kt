@@ -6,6 +6,7 @@ enum class ScriptId(
     AD_BLOCK("payload/js/ad_block.js"),
     DARK_MODE("payload/js/dark_mode.js"),
     CHARTS("payload/js/charts.js"),
+    CHARTS_CUSTOM("payload/js/charts_custom.js"),
     UPLOT_LIB("payload/js/uplot.min.js"),
     CHARTS_UPLOT("payload/js/charts_uplot.js"),
     KEEPA_ENHANCE("payload/js/keepa_enhance.js"),

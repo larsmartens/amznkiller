@@ -1,11 +1,9 @@
 package eu.hxreborn.amznkiller.xposed.injector
 
-import android.app.Activity
 import android.webkit.WebView
 import eu.hxreborn.amznkiller.prefs.PrefsSnapshot
 import eu.hxreborn.amznkiller.util.Logger
 import eu.hxreborn.amznkiller.xposed.bridge.ChartMode
-import eu.hxreborn.amznkiller.xposed.bridge.KeepaDataScraper
 import eu.hxreborn.amznkiller.xposed.js.ScriptId
 import eu.hxreborn.amznkiller.xposed.js.ScriptRepository
 import eu.hxreborn.amznkiller.xposed.js.WebViewJsExecutor
@@ -168,83 +166,37 @@ object PriceChartsInjector {
         keepaId: Int,
         camelLocale: String,
     ) {
-        // Show static charts immediately so user sees something
-        injectStatic(
-            webView,
-            prefs,
-            asin,
-            domain,
-            keepaId,
-            camelLocale,
-            forceInteractive = true,
-        )
-
-        // Try to scrape real data in the background
-        val activity = webView.context as? Activity
-        if (activity == null) {
-            Logger.logDebug(
-                "PriceChartsInjector: custom no activity context",
-            )
-            return
-        }
-
         Logger.logDebug(
-            "PriceChartsInjector: custom starting background scrape",
+            "PriceChartsInjector: injecting custom themed chart",
         )
-        KeepaDataScraper.scrape(
-            activity,
-            asin,
-            keepaId,
-        ) { json ->
-            if (json == null) {
-                Logger.logDebug(
-                    "PriceChartsInjector: custom scraper timeout",
+        val args =
+            JSONObject().apply {
+                put("asin", asin)
+                put("domain", domain)
+                put("keepaId", keepaId)
+                put("camelLocale", camelLocale)
+                put("dark", prefs.forceDarkWebview)
+                put(
+                    "defaultRange",
+                    prefs.chartDefaultRange,
                 )
-                return@scrape
+                put(
+                    "interactiveEnabled",
+                    prefs.chartInteractiveEnabled,
+                )
             }
-
+        val script =
+            ScriptRepository.get(ScriptId.CHARTS_CUSTOM) +
+                "\n" +
+                "window.AmznKiller.injectCustomCharts($args);"
+        WebViewJsExecutor.evaluate(
+            webView,
+            script,
+            "PriceChartsInjector:custom",
+        ) {
             Logger.logDebug(
-                "PriceChartsInjector: replacing with uPlot chart",
+                "PriceChartsInjector custom: $it",
             )
-            val keepaValue =
-                org.json.JSONTokener(json).nextValue()
-            val args =
-                JSONObject().apply {
-                    put("asin", asin)
-                    put("domain", domain)
-                    put("keepaId", keepaId)
-                    put("dark", prefs.forceDarkWebview)
-                    put(
-                        "defaultRange",
-                        prefs.chartDefaultRange,
-                    )
-                    put("keepaData", keepaValue)
-                }
-            val removeOld =
-                "(function(){" +
-                    "var e=document.getElementById(" +
-                    "'amznkiller-charts');" +
-                    "if(e)e.remove();" +
-                    "})();"
-            val script =
-                removeOld +
-                    "\n" +
-                    ScriptRepository.get(ScriptId.UPLOT_LIB) +
-                    "\n" +
-                    ScriptRepository.get(
-                        ScriptId.CHARTS_UPLOT,
-                    ) +
-                    "\n" +
-                    "window.AmznKiller.injectUplotChart($args);"
-            WebViewJsExecutor.evaluate(
-                webView,
-                script,
-                "PriceChartsInjector:uplot",
-            ) {
-                Logger.logDebug(
-                    "PriceChartsInjector uplot: $it",
-                )
-            }
         }
     }
 }

@@ -1,6 +1,6 @@
 (function () {
   if (!window.AmznKiller) window.AmznKiller = {};
-  if (window.AmznKiller.injectCharts) return;
+  if (window.AmznKiller.injectCustomCharts) return;
 
   var KEEPA_DOMAINS = {
     'amazon.com': 1, 'amazon.co.uk': 2, 'amazon.de': 3,
@@ -16,14 +16,7 @@
   };
 
   var RANGE_DAYS = { '14': 14, '30': 30, '90': 90, '365': 365, 'all': 3650 };
-  var TYPE_PARAMS = {
-    'amazon': { amazon: 1, new: 0, used: 0 },
-    'new':    { amazon: 0, new: 1, used: 0 },
-    'used':   { amazon: 0, new: 0, used: 1 },
-    'all':    { amazon: 1, new: 1, used: 1 }
-  };
 
-  // Build cssText from object, all values get !important to survive Amazon's CSS
   function css(obj) {
     var s = '';
     for (var k in obj) {
@@ -32,7 +25,7 @@
     return s;
   }
 
-  window.AmznKiller.injectCharts = function (args) {
+  window.AmznKiller.injectCustomCharts = function (args) {
     if (document.getElementById('amznkiller-charts')) return null;
 
     var asin = args.asin;
@@ -40,11 +33,41 @@
     var keepaId = args.keepaId || KEEPA_DOMAINS[domain] || 1;
     var camelLocale = args.camelLocale || CAMEL_LOCALES[domain] || 'us';
     var dark = !!(args && args.dark);
-    var defaultRange = (args && args.defaultRange) || 'all';
+    var defaultRange = (args && args.defaultRange) || '90';
     var interactiveEnabled = args && args.interactiveEnabled !== false;
 
     var currentRange = defaultRange;
-    var currentType = 'all';
+
+    // Theme-matched chart colors for Keepa graph API color params
+    // These hex values are passed without the # prefix
+    var chartColors;
+    if (dark) {
+      chartColors = {
+        cAmazon: 'FF9900',    // Amazon orange
+        cNew: '64B5F6',       // Bright blue
+        cUsed: '81C784',      // Green
+        cBB: 'FFD54F',        // Buy box gold
+        cBackground: '1A1A1A' // Dark background
+      };
+    } else {
+      chartColors = {
+        cAmazon: 'E67E22',    // Amazon orange
+        cNew: '1976D2',       // Blue
+        cUsed: '388E3C',      // Green
+        cBB: 'F57F17',        // Buy box amber
+        cBackground: 'FAFAFA' // Light background
+      };
+    }
+
+    // Data line toggles
+    var dataLines = {
+      amazon: { enabled: true, label: 'Amazon' },
+      new: { enabled: true, label: 'New' },
+      used: { enabled: true, label: 'Used' },
+      bb: { enabled: true, label: 'Buy Box' },
+      salesrank: { enabled: false, label: 'Sales Rank' },
+      fba: { enabled: false, label: 'FBA' }
+    };
 
     var borderColor = dark ? '#333' : '#ddd';
     var bgColor = dark ? '#1a1a1a' : '#fafafa';
@@ -54,14 +77,27 @@
     var btnActiveBg = dark ? '#555' : '#1a73e8';
     var btnColor = dark ? '#ccc' : '#555';
     var btnActiveColor = '#fff';
-    var darkFilter = dark ? 'invert(1) hue-rotate(180deg) saturate(2) brightness(0.9)' : 'none';
+    var toggleOnBg = dark ? '#2E7D32' : '#4CAF50';
+    var toggleOffBg = dark ? '#444' : '#ccc';
 
-    function buildKeepaUrl(range, type) {
-      var tp = TYPE_PARAMS[type] || TYPE_PARAMS['all'];
+    function buildKeepaUrl(range) {
       var rd = RANGE_DAYS[range] !== undefined ? RANGE_DAYS[range] : 3650;
-      return 'https://graph.keepa.com/pricehistory.png?domain=' + keepaId +
-        '&asin=' + asin + '&amazon=' + tp.amazon + '&new=' + tp.new +
-        '&used=' + tp.used + '&range=' + rd;
+      var url = 'https://graph.keepa.com/pricehistory.png?domain=' + keepaId +
+        '&asin=' + asin +
+        '&amazon=' + (dataLines.amazon.enabled ? 1 : 0) +
+        '&new=' + (dataLines.new.enabled ? 1 : 0) +
+        '&used=' + (dataLines.used.enabled ? 1 : 0) +
+        '&bb=' + (dataLines.bb.enabled ? 1 : 0) +
+        '&salesrank=' + (dataLines.salesrank.enabled ? 1 : 0) +
+        '&fba=' + (dataLines.fba.enabled ? 1 : 0) +
+        '&w=1000&h=500' +
+        '&cAmazon=' + chartColors.cAmazon +
+        '&cNew=' + chartColors.cNew +
+        '&cUsed=' + chartColors.cUsed +
+        '&cBuyBox=' + chartColors.cBB +
+        '&cBackground=' + chartColors.cBackground;
+      url += '&range=' + rd;
+      return url;
     }
 
     function buildCamelUrl() {
@@ -69,14 +105,14 @@
         '/amazon-new-used.png?force=1&legend=1&tp=all&w=725&h=400';
     }
 
-    // Inject styles scoped under #amznkiller-charts
-    if (!document.getElementById('amznkiller-charts-style')) {
+    // Inject styles
+    if (!document.getElementById('amznkiller-custom-charts-style')) {
       var styleEl = document.createElement('style');
-      styleEl.id = 'amznkiller-charts-style';
+      styleEl.id = 'amznkiller-custom-charts-style';
       styleEl.textContent = [
-        '@keyframes amzk-spin{to{transform:translate(-50%,-50%) rotate(360deg)}}',
+        '@keyframes amzk-cspin{to{transform:translate(-50%,-50%) rotate(360deg)}}',
         '#amznkiller-charts *{box-sizing:border-box !important}',
-        '#amznkiller-charts button{-webkit-appearance:none !important;appearance:none !important;margin:0 !important;line-height:normal !important;min-width:0 !important;min-height:0 !important}'
+        '#amznkiller-charts span[data-btn]{-webkit-appearance:none !important;appearance:none !important;margin:0 !important;line-height:normal !important;min-width:0 !important;min-height:0 !important}'
       ].join('\n');
       document.head.appendChild(styleEl);
     }
@@ -105,7 +141,6 @@
     title.textContent = 'Price History';
     headerRow.appendChild(title);
 
-    // Share button
     var shareBtn = document.createElement('span');
     shareBtn.textContent = 'Share';
     shareBtn.style.cssText = css({
@@ -115,22 +150,20 @@
     });
     shareBtn.onclick = function (e) {
       e.preventDefault(); e.stopPropagation();
-      var productUrl = window.location.href;
-      var productTitle = document.title || 'Amazon Product';
       try {
         if (typeof AmznKillerBridge !== 'undefined') {
-          AmznKillerBridge.shareProduct(productUrl, productTitle);
+          AmznKillerBridge.shareProduct(window.location.href, document.title || 'Amazon Product');
         }
       } catch (err) { /* bridge unavailable */ }
     };
     headerRow.appendChild(shareBtn);
     c.appendChild(headerRow);
 
-    // Controls row — use a single row with inline-block spans as buttons
+    // Range controls row
     var controls = document.createElement('div');
     controls.style.cssText = css({
       display: 'flex', 'flex-direction': 'row', 'align-items': 'center',
-      'justify-content': 'space-between', 'margin-bottom': '10px',
+      'justify-content': 'space-between', 'margin-bottom': '8px',
       'flex-wrap': 'wrap', gap: '6px'
     });
 
@@ -144,6 +177,7 @@
       for (var i = 0; i < items.length; i++) {
         (function (item) {
           var btn = document.createElement('span');
+          btn.setAttribute('data-btn', '1');
           btn.textContent = item.label;
           var isActive = item.key === activeKey;
           btn.style.cssText = css({
@@ -181,24 +215,70 @@
       { key: 'all', label: 'ALL' }
     ];
 
-    var typeItems = [
-      { key: 'amazon', label: 'Amazon' }, { key: 'new', label: 'New' },
-      { key: 'used', label: 'Used' }, { key: 'all', label: 'All' }
-    ];
-
     controls.appendChild(makeButtonGroup(rangeItems, currentRange, function (key) {
       currentRange = key;
       updateKeepaImage();
     }));
-
-    controls.appendChild(makeButtonGroup(typeItems, currentType, function (key) {
-      currentType = key;
-      updateKeepaImage();
-    }));
-
     c.appendChild(controls);
 
-    // Keepa chart
+    // Data line toggles row
+    var toggleRow = document.createElement('div');
+    toggleRow.style.cssText = css({
+      display: 'flex', 'flex-direction': 'row', 'align-items': 'center',
+      'margin-bottom': '10px', 'flex-wrap': 'wrap', gap: '8px'
+    });
+
+    var toggleKeys = ['amazon', 'new', 'used', 'bb', 'fba', 'salesrank'];
+    var toggleColors = {
+      amazon: '#' + chartColors.cAmazon,
+      new: '#' + chartColors.cNew,
+      used: '#' + chartColors.cUsed,
+      bb: '#' + chartColors.cBB,
+      fba: dark ? '#CE93D8' : '#7B1FA2',
+      salesrank: dark ? '#90A4AE' : '#546E7A'
+    };
+
+    for (var ti = 0; ti < toggleKeys.length; ti++) {
+      (function (key) {
+        var line = dataLines[key];
+        var dot = document.createElement('span');
+        dot.style.cssText = css({
+          width: '8px', height: '8px', 'border-radius': '50%',
+          background: toggleColors[key], display: 'inline-block',
+          'margin-right': '3px', 'vertical-align': 'middle',
+          opacity: line.enabled ? '1' : '0.3'
+        });
+
+        var label = document.createElement('span');
+        label.textContent = line.label;
+        label.style.cssText = css({
+          'font-size': '11px', color: line.enabled ? labelColor : (dark ? '#555' : '#bbb'),
+          cursor: 'pointer', 'user-select': 'none', '-webkit-user-select': 'none',
+          'vertical-align': 'middle',
+          'text-decoration': line.enabled ? 'none' : 'line-through'
+        });
+
+        var toggle = document.createElement('span');
+        toggle.style.cssText = css({
+          display: 'inline-flex', 'align-items': 'center', cursor: 'pointer'
+        });
+        toggle.appendChild(dot);
+        toggle.appendChild(label);
+
+        toggle.onclick = function (e) {
+          e.preventDefault(); e.stopPropagation();
+          line.enabled = !line.enabled;
+          dot.style.setProperty('opacity', line.enabled ? '1' : '0.3', 'important');
+          label.style.setProperty('color', line.enabled ? labelColor : (dark ? '#555' : '#bbb'), 'important');
+          label.style.setProperty('text-decoration', line.enabled ? 'none' : 'line-through', 'important');
+          updateKeepaImage();
+        };
+        toggleRow.appendChild(toggle);
+      })(toggleKeys[ti]);
+    }
+    c.appendChild(toggleRow);
+
+    // Keepa chart image
     var keepaWrap = document.createElement('div');
     keepaWrap.style.cssText = css({
       position: 'relative', 'margin-bottom': '8px', 'min-height': '120px',
@@ -211,9 +291,8 @@
       transform: 'translate(-50%,-50%)', 'z-index': '2',
       width: '24px', height: '24px', border: '3px solid ' + borderColor,
       'border-top-color': btnActiveBg, 'border-radius': '50%',
-      animation: 'amzk-spin 0.8s linear infinite', display: 'none'
+      animation: 'amzk-cspin 0.8s linear infinite', display: 'none'
     });
-
     keepaWrap.appendChild(spinner);
 
     var keepaLabel = document.createElement('div');
@@ -223,10 +302,10 @@
     keepaLabel.textContent = 'Keepa';
 
     var keepaImg = document.createElement('img');
-    keepaImg.src = buildKeepaUrl(currentRange, currentType);
+    keepaImg.src = buildKeepaUrl(currentRange);
     keepaImg.style.cssText = css({
       width: '100%', height: 'auto', 'border-radius': '4px',
-      filter: darkFilter, transition: 'opacity 0.3s ease', display: 'block'
+      transition: 'opacity 0.3s ease', display: 'block'
     });
     keepaImg.alt = 'Keepa chart for ' + asin;
     keepaImg.onerror = function () { keepaWrap.style.display = 'none'; };
@@ -235,9 +314,8 @@
     keepaWrap.appendChild(keepaImg);
     c.appendChild(keepaWrap);
 
-    // Update chart: swap src directly, use img's own onload instead of Image()
     function updateKeepaImage() {
-      var newUrl = buildKeepaUrl(currentRange, currentType);
+      var newUrl = buildKeepaUrl(currentRange);
       spinner.style.setProperty('display', 'block', 'important');
       keepaImg.style.setProperty('opacity', '0.4', 'important');
       keepaImg.onload = function () {
@@ -272,8 +350,11 @@
     camelImg.src = buildCamelUrl();
     camelImg.style.cssText = css({
       width: '100%', height: 'auto', 'border-radius': '4px',
-      filter: darkFilter, display: 'block'
+      display: 'block'
     });
+    if (dark) {
+      camelImg.style.setProperty('filter', 'invert(1) hue-rotate(180deg) saturate(2) brightness(0.9)', 'important');
+    }
     camelImg.alt = 'CamelCamelCamel chart for ' + asin;
     camelImg.onerror = function () { camelWrap.style.display = 'none'; };
 
@@ -282,7 +363,7 @@
     camelWrap.appendChild(camelLink);
     c.appendChild(camelWrap);
 
-    // Interactive chart button — fallback to opening URL in browser if bridge missing
+    // Interactive chart button
     if (interactiveEnabled) {
       var keepaPageUrl = 'https://keepa.com/#!product/' + keepaId + '-' + asin;
       var interactiveBtn = document.createElement('span');

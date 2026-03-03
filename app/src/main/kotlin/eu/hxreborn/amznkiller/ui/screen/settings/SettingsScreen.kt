@@ -1,5 +1,6 @@
 package eu.hxreborn.amznkiller.ui.screen.settings
 
+import android.app.ActivityManager
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -151,6 +152,8 @@ fun SettingsScreen(
             onSelect = { mode ->
                 viewModel.savePref(Prefs.CHART_MODE, mode)
                 showChartModeDialog = false
+                context.getSystemService<ActivityManager>()
+                    ?.killBackgroundProcesses("com.amazon.mShop.android.shopping")
             },
             onDismiss = { showChartModeDialog = false },
         )

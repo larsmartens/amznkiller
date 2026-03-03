@@ -112,7 +112,7 @@
 
     var fullData = alignSeries(seriesMap);
 
-    var RANGE_DAYS = { '30': 30, '90': 90, '365': 365, 'all': 0 };
+    var RANGE_DAYS = { '14': 14, '30': 30, '90': 90, '365': 365, 'all': 0 };
     var currentRange = defaultRange;
 
     var borderColor = dark ? '#333' : '#ddd';
@@ -154,8 +154,9 @@
     });
 
     var rangeItems = [
-      { key: '30', label: '1M' }, { key: '90', label: '3M' },
-      { key: '365', label: '1Y' }, { key: 'all', label: 'ALL' }
+      { key: '14', label: '2W' }, { key: '30', label: '1M' },
+      { key: '90', label: '3M' }, { key: '365', label: '1Y' },
+      { key: 'all', label: 'ALL' }
     ];
 
     var rangeButtons = {};
