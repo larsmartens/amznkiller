@@ -141,9 +141,23 @@ object PriceChartsInjector {
         val activity = webView.context.findActivity()
         if (activity == null) {
             Logger.logDebug("PriceChartsInjector: overlay no activity, falling back to static")
-            val domain = webView.url?.let { eu.hxreborn.amznkiller.xposed.runtime.AmazonUrlParser.parse(it).domain } ?: "amazon.com"
+            val domain =
+                webView.url
+                    ?.let {
+                        eu.hxreborn.amznkiller.xposed.runtime.AmazonUrlParser
+                            .parse(it)
+                            .domain
+                    } ?: "amazon.com"
             val camelLocale = CAMEL_LOCALES[domain] ?: "us"
-            injectStatic(webView, prefs, asin, domain, keepaId, camelLocale, forceInteractive = true)
+            injectStatic(
+                webView,
+                prefs,
+                asin,
+                domain,
+                keepaId,
+                camelLocale,
+                forceInteractive = true,
+            )
             return
         }
         Logger.logDebug("PriceChartsInjector: auto-opening overlay")
@@ -170,7 +184,9 @@ object PriceChartsInjector {
 
         KeepaDataScraper.scrape(activity, asin, keepaId) { json ->
             if (json == null) {
-                Logger.logDebug("PriceChartsInjector: scraper returned null, falling back to static")
+                Logger.logDebug(
+                    "PriceChartsInjector: scraper returned null, falling back to static",
+                )
                 injectStatic(webView, prefs, asin, domain, keepaId, camelLocale)
                 return@scrape
             }
