@@ -10,7 +10,7 @@ object Prefs {
     val SELECTOR_URL =
         StringPref(
             "selector_url",
-            "https://raw.githubusercontent.com/hxreborn/amznkiller/main/lists/generated/merged.txt",
+            "https://raw.githubusercontent.com/larsmartens/amznkiller/main/lists/generated/merged.txt",
         )
     val CACHED_SELECTORS = StringPref("cached_selectors", "")
     val LAST_FETCHED = LongPref("last_fetched", 0L)

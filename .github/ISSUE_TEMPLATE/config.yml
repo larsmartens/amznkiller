@@ -1,11 +1,11 @@
 blank_issues_enabled: false
 contact_links:
   - name: Security Advisory
-    url: https://github.com/hxreborn/amznkiller/security/advisories/new
+    url: https://github.com/larsmartens/amznkiller/security/advisories/new
     about: Report a security vulnerability
   - name: Price charts issue
-    url: https://github.com/hxreborn/amznkiller/issues/5
+    url: https://github.com/larsmartens/amznkiller/issues/5
     about: Charts not appearing on certain products — see tracking issue
   - name: Dark theme issue
-    url: https://github.com/hxreborn/amznkiller/issues/6
+    url: https://github.com/larsmartens/amznkiller/issues/6
     about: Dark mode problems — see tracking issue

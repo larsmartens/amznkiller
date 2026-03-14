@@ -1,9 +1,14 @@
 package eu.hxreborn.amznkiller.xposed.injector
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.webkit.WebView
 import eu.hxreborn.amznkiller.prefs.PrefsSnapshot
 import eu.hxreborn.amznkiller.util.Logger
 import eu.hxreborn.amznkiller.xposed.bridge.ChartMode
+import eu.hxreborn.amznkiller.xposed.bridge.ChartOverlay
+import eu.hxreborn.amznkiller.xposed.bridge.KeepaDataScraper
 import eu.hxreborn.amznkiller.xposed.js.ScriptId
 import eu.hxreborn.amznkiller.xposed.js.ScriptRepository
 import eu.hxreborn.amznkiller.xposed.js.WebViewJsExecutor
@@ -133,27 +138,17 @@ object PriceChartsInjector {
         asin: String,
         keepaId: Int,
     ) {
-        Logger.logDebug(
-            "PriceChartsInjector: injecting Keepa iframe inline",
-        )
-        val args =
-            JSONObject().apply {
-                put("asin", asin)
-                put("keepaId", keepaId)
-                put("dark", prefs.forceDarkWebview)
-            }
-        val script =
-            ScriptRepository.get(ScriptId.KEEPA_INLINE) +
-                "\n" +
-                "window.AmznKiller.injectKeepaInline($args);"
-        WebViewJsExecutor.evaluate(
-            webView,
-            script,
-            "PriceChartsInjector:keepa_inline",
-        ) {
-            Logger.logDebug(
-                "PriceChartsInjector keepa_inline: $it",
-            )
+        val activity = webView.context.findActivity()
+        if (activity == null) {
+            Logger.logDebug("PriceChartsInjector: overlay no activity, falling back to static")
+            val domain = webView.url?.let { eu.hxreborn.amznkiller.xposed.runtime.AmazonUrlParser.parse(it).domain } ?: "amazon.com"
+            val camelLocale = CAMEL_LOCALES[domain] ?: "us"
+            injectStatic(webView, prefs, asin, domain, keepaId, camelLocale, forceInteractive = true)
+            return
+        }
+        Logger.logDebug("PriceChartsInjector: auto-opening overlay")
+        activity.runOnUiThread {
+            ChartOverlay.show(activity, asin, keepaId, prefs.forceDarkWebview)
         }
     }
 
@@ -166,37 +161,48 @@ object PriceChartsInjector {
         keepaId: Int,
         camelLocale: String,
     ) {
-        Logger.logDebug(
-            "PriceChartsInjector: injecting custom themed chart",
-        )
-        val args =
-            JSONObject().apply {
-                put("asin", asin)
-                put("domain", domain)
-                put("keepaId", keepaId)
-                put("camelLocale", camelLocale)
-                put("dark", prefs.forceDarkWebview)
-                put(
-                    "defaultRange",
-                    prefs.chartDefaultRange,
-                )
-                put(
-                    "interactiveEnabled",
-                    prefs.chartInteractiveEnabled,
-                )
+        val activity = webView.context.findActivity()
+        if (activity == null) {
+            Logger.logDebug("PriceChartsInjector: no activity, falling back to static")
+            injectStatic(webView, prefs, asin, domain, keepaId, camelLocale)
+            return
+        }
+
+        KeepaDataScraper.scrape(activity, asin, keepaId) { json ->
+            if (json == null) {
+                Logger.logDebug("PriceChartsInjector: scraper returned null, falling back to static")
+                injectStatic(webView, prefs, asin, domain, keepaId, camelLocale)
+                return@scrape
             }
-        val script =
-            ScriptRepository.get(ScriptId.CHARTS_CUSTOM) +
-                "\n" +
-                "window.AmznKiller.injectCustomCharts($args);"
-        WebViewJsExecutor.evaluate(
-            webView,
-            script,
-            "PriceChartsInjector:custom",
-        ) {
-            Logger.logDebug(
-                "PriceChartsInjector custom: $it",
-            )
+
+            Logger.logDebug("PriceChartsInjector: injecting uPlot chart")
+            val args =
+                JSONObject().apply {
+                    put("asin", asin)
+                    put("domain", domain)
+                    put("keepaId", keepaId)
+                    put("dark", prefs.forceDarkWebview)
+                    put("defaultRange", prefs.chartDefaultRange)
+                    put("keepaData", org.json.JSONTokener(json).nextValue())
+                }
+            val script =
+                ScriptRepository.get(ScriptId.UPLOT_LIB) +
+                    "\n" +
+                    ScriptRepository.get(ScriptId.CHARTS_UPLOT) +
+                    "\n" +
+                    "window.AmznKiller.injectUplotChart($args);"
+            WebViewJsExecutor.evaluate(webView, script, "PriceChartsInjector:uplot") {
+                Logger.logDebug("PriceChartsInjector uplot: $it")
+            }
         }
     }
+}
+
+private fun Context.findActivity(): Activity? {
+    var current: Context? = this
+    while (current is ContextWrapper) {
+        if (current is Activity) return current
+        current = current.baseContext
+    }
+    return null
 }

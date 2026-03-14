@@ -1,0 +1,95 @@
+name: Sync Upstream
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote
+        run: git remote add upstream https://github.com/hxreborn/amznkiller.git || true
+
+      - name: Fetch upstream
+        run: git fetch upstream main
+
+      - name: Check for upstream commits
+        id: check
+        run: |
+          BEHIND=$(git rev-list HEAD..upstream/main --count)
+          echo "behind=$BEHIND" >> "$GITHUB_OUTPUT"
+          echo "Upstream is $BEHIND commit(s) ahead"
+
+      - name: Merge upstream
+        if: steps.check.outputs.behind != '0'
+        run: |
+          git merge upstream/main --no-edit -X ours || {
+            git checkout --ours .
+            git add .
+            git commit --no-edit
+          }
+
+      - name: Re-apply fork references
+        if: steps.check.outputs.behind != '0'
+        run: |
+          sed -i 's|raw.githubusercontent.com/hxreborn/amznkiller|raw.githubusercontent.com/larsmartens/amznkiller|g' \
+            app/src/main/kotlin/eu/hxreborn/amznkiller/prefs/Prefs.kt
+          sed -i 's|https://github.com/hxreborn/amznkiller|https://github.com/larsmartens/amznkiller|g' \
+            README.md app/src/main/kotlin/eu/hxreborn/amznkiller/ui/screen/settings/SettingsScreen.kt .github/ISSUE_TEMPLATE/config.yml
+
+          if ! git diff --quiet; then
+            git add README.md app/src/main/kotlin/eu/hxreborn/amznkiller/prefs/Prefs.kt app/src/main/kotlin/eu/hxreborn/amznkiller/ui/screen/settings/SettingsScreen.kt .github/ISSUE_TEMPLATE/config.yml
+            git commit -m "chore: re-apply fork references after upstream sync"
+          fi
+
+      - name: Push synced branch
+        if: steps.check.outputs.behind != '0'
+        run: git push origin main
+
+      - uses: actions/setup-java@v4
+        if: steps.check.outputs.behind != '0'
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Build libxposed
+        if: steps.check.outputs.behind != '0'
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          command: ./gradlew buildLibxposed
+
+      - name: Build APKs
+        if: steps.check.outputs.behind != '0'
+        run: ./gradlew assembleDebug assembleRelease
+
+      - name: Upload build artifacts
+        if: steps.check.outputs.behind != '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: amznkiller-sync-build
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/release/*.apk

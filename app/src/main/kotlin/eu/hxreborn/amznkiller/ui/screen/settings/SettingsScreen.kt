@@ -106,7 +106,7 @@ import me.zhanghai.compose.preference.SwitchPreference
 import me.zhanghai.compose.preference.preference
 import me.zhanghai.compose.preference.preferenceCategory
 
-private const val REPO_URL = "https://github.com/hxreborn/amznkiller"
+private const val REPO_URL = "https://github.com/larsmartens/amznkiller"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

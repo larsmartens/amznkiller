@@ -1,6 +1,8 @@
 package eu.hxreborn.amznkiller.xposed.bridge
 
 import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
@@ -24,7 +26,7 @@ class ChartBridge(
                 "asin=$asin keepaId=$keepaId",
         )
         val webView = webViewRef.get() ?: return
-        val activity = webView.context as? Activity
+        val activity = webView.context.findActivity()
         if (activity == null) {
             Logger.logDebug(
                 "ChartBridge: no activity context",
@@ -88,4 +90,13 @@ class ChartBridge(
     companion object {
         const val BRIDGE_NAME = "AmznKillerBridge"
     }
+}
+
+private fun Context.findActivity(): Activity? {
+    var current: Context? = this
+    while (current is ContextWrapper) {
+        if (current is Activity) return current
+        current = current.baseContext
+    }
+    return null
 }

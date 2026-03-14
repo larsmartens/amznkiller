@@ -1,5 +1,14 @@
 # AmznKiller
 
+## Fork Changes
+
+This fork tracks `hxreborn/amznkiller` and keeps a fork-specific layer on top:
+
+- the active public fork, release links, selector feed, and companion app links point at `larsmartens/amznkiller`
+- advanced chart work is carried on top of upstream, including Keepa overlay mode and custom interactive chart rendering
+- a scheduled workflow merges upstream `main` into this fork daily and rebuilds when upstream changed
+- release and CI artifacts are published from the fork so local installs can stay aligned with the fork branch
+
 Xposed module built on the modern LSPosed API that hides ads and sponsored content inside the Amazon Android app.
 
 <p align="center">
@@ -12,24 +21,24 @@ Xposed module built on the modern LSPosed API that hides ads and sponsored conte
 </p>
 
 <p align="center">
-  <a href="https://github.com/hxreborn/amznkiller/actions/workflows/android-ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/hxreborn/amznkiller/android-ci.yml?label=build&style=flat&logo=githubactions&logoColor=white" alt="Build" /></a>
-  <a href="https://github.com/hxreborn/amznkiller/actions/workflows/update-selectors.yml"><img src="https://img.shields.io/github/actions/workflow/status/hxreborn/amznkiller/update-selectors.yml?label=selector%20sync&style=flat&logo=githubactions&logoColor=white" alt="Selector Sync" /></a>
-  <a href="https://github.com/hxreborn/amznkiller/actions/workflows/validate-selectors.yml"><img src="https://img.shields.io/github/actions/workflow/status/hxreborn/amznkiller/validate-selectors.yml?label=validate&style=flat&logo=githubactions&logoColor=white" alt="Selector Validate" /></a>
+  <a href="https://github.com/larsmartens/amznkiller/actions/workflows/android-ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/larsmartens/amznkiller/android-ci.yml?label=build&style=flat&logo=githubactions&logoColor=white" alt="Build" /></a>
+  <a href="https://github.com/larsmartens/amznkiller/actions/workflows/update-selectors.yml"><img src="https://img.shields.io/github/actions/workflow/status/larsmartens/amznkiller/update-selectors.yml?label=selector%20sync&style=flat&logo=githubactions&logoColor=white" alt="Selector Sync" /></a>
+  <a href="https://github.com/larsmartens/amznkiller/actions/workflows/validate-selectors.yml"><img src="https://img.shields.io/github/actions/workflow/status/larsmartens/amznkiller/validate-selectors.yml?label=validate&style=flat&logo=githubactions&logoColor=white" alt="Selector Validate" /></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/hxreborn/amznkiller/releases/latest"><img src="https://img.shields.io/github/v/release/hxreborn/amznkiller?style=flat&logo=github" alt="Release" /></a>
-  <a href="https://github.com/hxreborn/amznkiller/releases"><img src="https://img.shields.io/github/downloads/hxreborn/amznkiller/total?style=flat&logo=github" alt="Downloads" /></a>
+  <a href="https://github.com/larsmartens/amznkiller/releases/latest"><img src="https://img.shields.io/github/v/release/larsmartens/amznkiller?style=flat&logo=github" alt="Release" /></a>
+  <a href="https://github.com/larsmartens/amznkiller/releases"><img src="https://img.shields.io/github/downloads/larsmartens/amznkiller/total?style=flat&logo=github" alt="Downloads" /></a>
   <a href="https://github.com/Xposed-Modules-Repo/eu.hxreborn.amznkiller/releases/latest"><img src="https://img.shields.io/github/v/release/Xposed-Modules-Repo/eu.hxreborn.amznkiller?label=xposed%20repo&style=flat&logo=xdadevelopers" alt="Xposed Repo" /></a>
   <a href="https://github.com/Xposed-Modules-Repo/eu.hxreborn.amznkiller/releases"><img src="https://img.shields.io/github/downloads/Xposed-Modules-Repo/eu.hxreborn.amznkiller/total?label=xposed%20downloads&style=flat&logo=xdadevelopers" alt="Xposed Downloads" /></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/hxreborn/amznkiller/stargazers"><img src="https://img.shields.io/github/stars/hxreborn/amznkiller?style=flat&logo=github" alt="Stars" /></a>
-  <a href="https://github.com/hxreborn/amznkiller/issues"><img src="https://img.shields.io/github/issues/hxreborn/amznkiller?style=flat&logo=github" alt="Issues" /></a>
-  <a href="https://github.com/hxreborn/amznkiller/issues?q=is%3Aissue+is%3Aclosed"><img src="https://img.shields.io/github/issues-closed/hxreborn/amznkiller?style=flat&logo=github" alt="Closed Issues" /></a>
-  <a href="https://github.com/hxreborn/amznkiller/commits/main"><img src="https://img.shields.io/github/last-commit/hxreborn/amznkiller?style=flat&logo=github" alt="Last Commit" /></a>
-  <a href="https://github.com/hxreborn/amznkiller/blob/main/LICENSE"><img src="https://img.shields.io/github/license/hxreborn/amznkiller?style=flat&logo=gnu" alt="License" /></a>
+  <a href="https://github.com/larsmartens/amznkiller/stargazers"><img src="https://img.shields.io/github/stars/larsmartens/amznkiller?style=flat&logo=github" alt="Stars" /></a>
+  <a href="https://github.com/larsmartens/amznkiller/issues"><img src="https://img.shields.io/github/issues/larsmartens/amznkiller?style=flat&logo=github" alt="Issues" /></a>
+  <a href="https://github.com/larsmartens/amznkiller/issues?q=is%3Aissue+is%3Aclosed"><img src="https://img.shields.io/github/issues-closed/larsmartens/amznkiller?style=flat&logo=github" alt="Closed Issues" /></a>
+  <a href="https://github.com/larsmartens/amznkiller/commits/main"><img src="https://img.shields.io/github/last-commit/larsmartens/amznkiller?style=flat&logo=github" alt="Last Commit" /></a>
+  <a href="https://github.com/larsmartens/amznkiller/blob/main/LICENSE"><img src="https://img.shields.io/github/license/larsmartens/amznkiller?style=flat&logo=gnu" alt="License" /></a>
 </p>
 
 ## Features
@@ -59,7 +68,7 @@ Xposed module built on the modern LSPosed API that hides ads and sponsored conte
 1. Download the APK:
 
     <a href="../../releases"><img src="https://github.com/user-attachments/assets/d18f850c-e4d2-4e00-8b03-3b0e87e90954" height="60" alt="Get it on GitHub" /></a>
-    <a href="http://apps.obtainium.imranr.dev/redirect.html?r=obtainium://app/%7B%22id%22%3A%22eu.hxreborn.amznkiller%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2Fhxreborn%2Famznkiller%22%2C%22author%22%3A%22rafareborn%22%2C%22name%22%3A%22AmznKiller%22%2C%22additionalSettings%22%3A%22%7B%5C%22includePrereleases%5C%22%3Afalse%7D%22%7D"><img src="https://github.com/user-attachments/assets/dffe8fb9-c0d1-470b-8d69-6d5b38a8aa2d" height="60" alt="Get it on Obtainium" /></a>
+    <a href="http://apps.obtainium.imranr.dev/redirect.html?r=obtainium://app/%7B%22id%22%3A%22eu.hxreborn.amznkiller%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2Flarsmartens%2Famznkiller%22%2C%22author%22%3A%22larsmartens%22%2C%22name%22%3A%22AmznKiller%22%2C%22additionalSettings%22%3A%22%7B%5C%22includePrereleases%5C%22%3Afalse%7D%22%7D"><img src="https://github.com/user-attachments/assets/dffe8fb9-c0d1-470b-8d69-6d5b38a8aa2d" height="60" alt="Get it on Obtainium" /></a>
 
 2. Enable the module in LSPosed and scope it to `com.amazon.mShop.android.shopping`
 3. Open the AmznKiller companion app to verify the module is active and optionally fetch updated
@@ -182,7 +191,7 @@ You can enable WebView debugging in settings and inspect via `chrome://inspect`.
 ## Build
 
 ```bash
-git clone --recurse-submodules https://github.com/hxreborn/amznkiller.git
+git clone --recurse-submodules https://github.com/larsmartens/amznkiller.git
 cd amznkiller
 
 # Build libxposed and publish to local Maven repo
@@ -206,7 +215,7 @@ RELEASE_KEY_PASSWORD=<key_password>
 
 See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for guidelines on pull requests, code style, and commit conventions.
 
-For bugs or feature requests, [open an issue](https://github.com/hxreborn/amznkiller/issues/new/choose).
+For bugs or feature requests, [open an issue](https://github.com/larsmartens/amznkiller/issues/new/choose).
 
 ## License
 
