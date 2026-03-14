@@ -11,6 +11,9 @@ data class PrefsSnapshot(
     val webviewDebugging: Boolean,
     val forceDarkWebview: Boolean,
     val priceChartsEnabled: Boolean,
+    val chartDefaultRange: String,
+    val chartInteractiveEnabled: Boolean,
+    val chartMode: String,
 )
 
 object PrefsManager {
@@ -42,6 +45,18 @@ object PrefsManager {
     var priceChartsEnabled: Boolean = Prefs.PRICE_CHARTS_ENABLED.default
         private set
 
+    @Volatile
+    var chartDefaultRange: String = Prefs.CHART_DEFAULT_RANGE.default
+        private set
+
+    @Volatile
+    var chartInteractiveEnabled: Boolean = Prefs.CHART_INTERACTIVE_ENABLED.default
+        private set
+
+    @Volatile
+    var chartMode: String = Prefs.CHART_MODE.default
+        private set
+
     fun init(xposed: XposedInterface) {
         runCatching {
             remotePrefs = xposed.getRemotePreferences(Prefs.GROUP)
@@ -63,6 +78,9 @@ object PrefsManager {
                 webviewDebugging = Prefs.WEBVIEW_DEBUGGING.read(prefs)
                 forceDarkWebview = Prefs.FORCE_DARK_WEBVIEW.read(prefs)
                 priceChartsEnabled = Prefs.PRICE_CHARTS_ENABLED.read(prefs)
+                chartDefaultRange = Prefs.CHART_DEFAULT_RANGE.read(prefs)
+                chartInteractiveEnabled = Prefs.CHART_INTERACTIVE_ENABLED.read(prefs)
+                chartMode = Prefs.CHART_MODE.read(prefs)
             }
         }.onFailure { Logger.log("refreshCache() failed", it) }
     }
@@ -74,6 +92,9 @@ object PrefsManager {
             webviewDebugging = webviewDebugging,
             forceDarkWebview = forceDarkWebview,
             priceChartsEnabled = priceChartsEnabled,
+            chartDefaultRange = chartDefaultRange,
+            chartInteractiveEnabled = chartInteractiveEnabled,
+            chartMode = chartMode,
         )
 
     fun setFallbackSelectors(fallback: List<String>) {

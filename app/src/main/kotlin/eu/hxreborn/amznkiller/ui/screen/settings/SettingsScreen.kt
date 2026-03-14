@@ -1,5 +1,6 @@
 package eu.hxreborn.amznkiller.ui.screen.settings
 
+import android.app.ActivityManager
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -20,6 +21,7 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.CloudSync
 import androidx.compose.material.icons.outlined.DarkMode
@@ -28,6 +30,8 @@ import androidx.compose.material.icons.outlined.FormatPaint
 import androidx.compose.material.icons.outlined.Gavel
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.Timeline
+import androidx.compose.material.icons.outlined.TouchApp
 import androidx.compose.material.icons.outlined.TrendingUp
 import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.DeveloperMode
@@ -117,6 +121,8 @@ fun SettingsScreen(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var showThemeDialog by remember { mutableStateOf(false) }
     var showUrlDialog by remember { mutableStateOf(false) }
+    var showRangeDialog by remember { mutableStateOf(false) }
+    var showChartModeDialog by remember { mutableStateOf(false) }
 
     if (showUrlDialog) {
         SelectorUrlDialog(
@@ -126,6 +132,31 @@ fun SettingsScreen(
                 showUrlDialog = false
             },
             onDismiss = { showUrlDialog = false },
+        )
+    }
+
+    if (showRangeDialog) {
+        ChartRangeDialog(
+            currentRange = prefs.chartDefaultRange,
+            onSelect = { range ->
+                viewModel.savePref(Prefs.CHART_DEFAULT_RANGE, range)
+                showRangeDialog = false
+            },
+            onDismiss = { showRangeDialog = false },
+        )
+    }
+
+    if (showChartModeDialog) {
+        ChartModeDialog(
+            currentMode = prefs.chartMode,
+            onSelect = { mode ->
+                viewModel.savePref(Prefs.CHART_MODE, mode)
+                showChartModeDialog = false
+                context
+                    .getSystemService<ActivityManager>()
+                    ?.killBackgroundProcesses("com.amazon.mShop.android.shopping")
+            },
+            onDismiss = { showChartModeDialog = false },
         )
     }
 
@@ -338,7 +369,7 @@ fun SettingsScreen(
                     },
                 )
 
-                val displayItemCount = 2
+                val displayItemCount = 5
                 val chartsShape = shapeForPosition(displayItemCount, 0)
                 switchPreference(
                     modifier = Modifier.padding(horizontal = 8.dp).background(color = surface, shape = chartsShape).clip(chartsShape),
@@ -369,7 +400,107 @@ fun SettingsScreen(
 
                 item { Spacer(Modifier.height(2.dp)) }
 
-                val darkModeShape = shapeForPosition(displayItemCount, 1)
+                val chartModeShape = shapeForPosition(displayItemCount, 1)
+                preference(
+                    modifier =
+                        Modifier
+                            .padding(horizontal = 8.dp)
+                            .background(color = surface, shape = chartModeShape)
+                            .clip(chartModeShape),
+                    key = "chart_mode",
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Outlined.BarChart,
+                            contentDescription = null,
+                        )
+                    },
+                    title = {
+                        Text(
+                            text = stringResource(R.string.settings_chart_mode),
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    },
+                    summary = {
+                        val modeLabel =
+                            when (prefs.chartMode) {
+                                "custom" -> stringResource(R.string.settings_chart_mode_custom)
+                                "keepa_overlay" -> stringResource(R.string.settings_chart_mode_keepa_overlay)
+                                else -> stringResource(R.string.settings_chart_mode_static)
+                            }
+                        Text(text = modeLabel)
+                    },
+                    onClick = { showChartModeDialog = true },
+                )
+
+                item { Spacer(Modifier.height(2.dp)) }
+
+                val chartRangeShape = shapeForPosition(displayItemCount, 2)
+                preference(
+                    modifier =
+                        Modifier
+                            .padding(horizontal = 8.dp)
+                            .background(color = surface, shape = chartRangeShape)
+                            .clip(chartRangeShape),
+                    key = "chart_default_range",
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Outlined.Timeline,
+                            contentDescription = null,
+                        )
+                    },
+                    title = {
+                        Text(
+                            text = stringResource(R.string.settings_chart_default_range),
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    },
+                    summary = {
+                        val rangeLabel =
+                            when (prefs.chartDefaultRange) {
+                                "30" -> "1 Month"
+                                "90" -> "3 Months"
+                                "365" -> "1 Year"
+                                else -> "All Time"
+                            }
+                        Text(text = rangeLabel)
+                    },
+                    onClick = { showRangeDialog = true },
+                )
+
+                item { Spacer(Modifier.height(2.dp)) }
+
+                val interactiveShape = shapeForPosition(displayItemCount, 3)
+                switchPreference(
+                    modifier =
+                        Modifier
+                            .padding(horizontal = 8.dp)
+                            .background(color = surface, shape = interactiveShape)
+                            .clip(interactiveShape),
+                    key = "chart_interactive",
+                    value = prefs.chartInteractiveEnabled,
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Outlined.TouchApp,
+                            contentDescription = null,
+                        )
+                    },
+                    title = {
+                        Text(
+                            text = stringResource(R.string.settings_chart_interactive),
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    },
+                    summary = {
+                        Text(
+                            text = stringResource(R.string.settings_chart_interactive_summary),
+                        )
+                    },
+                    onValueChange = { viewModel.savePref(Prefs.CHART_INTERACTIVE_ENABLED, it) },
+                )
+
+                item { Spacer(Modifier.height(2.dp)) }
+
+                val darkModeShape = shapeForPosition(displayItemCount, 4)
                 switchPreference(
                     modifier = Modifier.padding(horizontal = 8.dp).background(color = surface, shape = darkModeShape).clip(darkModeShape),
                     key = "force_dark_webview",
@@ -614,6 +745,107 @@ private fun ThemeDialog(
                     ) {
                         RadioButton(
                             selected = option == currentConfig,
+                            onClick = null,
+                        )
+                        Spacer(modifier = Modifier.padding(start = 16.dp))
+                        Text(
+                            text = labels[index],
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(android.R.string.cancel))
+            }
+        },
+    )
+}
+
+@Composable
+private fun ChartRangeDialog(
+    currentRange: String,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val options = listOf("all", "365", "90", "30")
+    val labels = listOf("All Time", "1 Year", "3 Months", "1 Month")
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.settings_chart_default_range)) },
+        text = {
+            Column(modifier = Modifier.selectableGroup()) {
+                options.forEachIndexed { index, option ->
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(56.dp)
+                                .selectable(
+                                    selected = option == currentRange,
+                                    onClick = { onSelect(option) },
+                                    role = Role.RadioButton,
+                                ).padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(
+                            selected = option == currentRange,
+                            onClick = null,
+                        )
+                        Spacer(modifier = Modifier.padding(start = 16.dp))
+                        Text(
+                            text = labels[index],
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(android.R.string.cancel))
+            }
+        },
+    )
+}
+
+@Composable
+private fun ChartModeDialog(
+    currentMode: String,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val options = listOf("static", "custom", "keepa_overlay")
+    val labels =
+        listOf(
+            stringResource(R.string.settings_chart_mode_static),
+            stringResource(R.string.settings_chart_mode_custom),
+            stringResource(R.string.settings_chart_mode_keepa_overlay),
+        )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.settings_chart_mode)) },
+        text = {
+            Column(modifier = Modifier.selectableGroup()) {
+                options.forEachIndexed { index, option ->
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(56.dp)
+                                .selectable(
+                                    selected = option == currentMode,
+                                    onClick = { onSelect(option) },
+                                    role = Role.RadioButton,
+                                ).padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(
+                            selected = option == currentMode,
                             onClick = null,
                         )
                         Spacer(modifier = Modifier.padding(start = 16.dp))

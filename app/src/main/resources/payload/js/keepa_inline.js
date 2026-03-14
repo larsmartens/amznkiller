@@ -1,6 +1,6 @@
 (function () {
   if (!window.AmznKiller) window.AmznKiller = {};
-  if (window.AmznKiller.injectCharts) return;
+  if (window.AmznKiller.injectKeepaInline) return;
 
   var KEEPA_DOMAINS = {
     'amazon.com': 1, 'amazon.co.uk': 2, 'amazon.de': 3,
@@ -9,21 +9,14 @@
     'amazon.com.mx': 11, 'amazon.com.br': 12, 'amazon.com.au': 13
   };
 
-  var CAMEL_LOCALES = {
-    'amazon.com': 'us', 'amazon.co.uk': 'uk', 'amazon.de': 'de',
-    'amazon.fr': 'fr', 'amazon.co.jp': 'jp', 'amazon.ca': 'ca',
-    'amazon.it': 'it', 'amazon.es': 'es', 'amazon.com.au': 'au'
-  };
-
   var RANGE_DAYS = { '14': 14, '30': 30, '90': 90, '365': 365, 'all': 3650 };
   var TYPE_PARAMS = {
-    'amazon': { amazon: 1, new: 0, used: 0 },
-    'new':    { amazon: 0, new: 1, used: 0 },
-    'used':   { amazon: 0, new: 0, used: 1 },
-    'all':    { amazon: 1, new: 1, used: 1 }
+    'amazon': { amazon: 1, new: 0, used: 0, bb: 0 },
+    'new':    { amazon: 0, new: 1, used: 0, bb: 0 },
+    'used':   { amazon: 0, new: 0, used: 1, bb: 0 },
+    'all':    { amazon: 1, new: 1, used: 1, bb: 1 }
   };
 
-  // Build cssText from object, all values get !important to survive Amazon's CSS
   function css(obj) {
     var s = '';
     for (var k in obj) {
@@ -32,16 +25,13 @@
     return s;
   }
 
-  window.AmznKiller.injectCharts = function (args) {
-    if (document.getElementById('amznkiller-charts')) return null;
+  window.AmznKiller.injectKeepaInline = function (args) {
+    if (document.getElementById('amznkiller-keepa-inline')) return null;
 
     var asin = args.asin;
-    var domain = args.domain || window.location.hostname.replace(/^www\./, '');
-    var keepaId = args.keepaId || KEEPA_DOMAINS[domain] || 1;
-    var camelLocale = args.camelLocale || CAMEL_LOCALES[domain] || 'us';
+    var keepaId = args.keepaId || 1;
     var dark = !!(args && args.dark);
-    var defaultRange = (args && args.defaultRange) || 'all';
-    var interactiveEnabled = args && args.interactiveEnabled !== false;
+    var defaultRange = (args && args.defaultRange) || '90';
 
     var currentRange = defaultRange;
     var currentType = 'all';
@@ -56,34 +46,31 @@
     var btnActiveColor = '#fff';
     var darkFilter = dark ? 'invert(1) hue-rotate(180deg) saturate(2) brightness(0.9)' : 'none';
 
-    function buildKeepaUrl(range, type) {
+    function buildUrl(range, type) {
       var tp = TYPE_PARAMS[type] || TYPE_PARAMS['all'];
       var rd = RANGE_DAYS[range] !== undefined ? RANGE_DAYS[range] : 3650;
-      return 'https://graph.keepa.com/pricehistory.png?domain=' + keepaId +
+      var url = 'https://graph.keepa.com/pricehistory.png?domain=' + keepaId +
         '&asin=' + asin + '&amazon=' + tp.amazon + '&new=' + tp.new +
-        '&used=' + tp.used + '&range=' + rd;
+        '&used=' + tp.used + '&bb=' + tp.bb + '&w=1000&h=500';
+      url += '&range=' + rd;
+      return url;
     }
 
-    function buildCamelUrl() {
-      return 'https://charts.camelcamelcamel.com/' + camelLocale + '/' + asin +
-        '/amazon-new-used.png?force=1&legend=1&tp=all&w=725&h=400';
-    }
-
-    // Inject styles scoped under #amznkiller-charts
-    if (!document.getElementById('amznkiller-charts-style')) {
+    // Inject styles
+    if (!document.getElementById('amznkiller-keepa-inline-style')) {
       var styleEl = document.createElement('style');
-      styleEl.id = 'amznkiller-charts-style';
+      styleEl.id = 'amznkiller-keepa-inline-style';
       styleEl.textContent = [
-        '@keyframes amzk-spin{to{transform:translate(-50%,-50%) rotate(360deg)}}',
-        '#amznkiller-charts *{box-sizing:border-box !important}',
-        '#amznkiller-charts button{-webkit-appearance:none !important;appearance:none !important;margin:0 !important;line-height:normal !important;min-width:0 !important;min-height:0 !important}'
+        '@keyframes amzk-spin-inline{to{transform:translate(-50%,-50%) rotate(360deg)}}',
+        '#amznkiller-keepa-inline *{box-sizing:border-box !important}',
+        '#amznkiller-keepa-inline span[data-btn]{-webkit-appearance:none !important;appearance:none !important;margin:0 !important;line-height:normal !important;min-width:0 !important;min-height:0 !important}'
       ].join('\n');
       document.head.appendChild(styleEl);
     }
 
     // Container
     var c = document.createElement('div');
-    c.id = 'amznkiller-charts';
+    c.id = 'amznkiller-keepa-inline';
     c.style.cssText = css({
       margin: '16px 0', padding: '12px', 'border-radius': '8px',
       border: '1px solid ' + borderColor, background: bgColor,
@@ -102,31 +89,21 @@
     title.style.cssText = css({
       'font-weight': 'bold', 'font-size': '14px', color: titleColor, display: 'inline'
     });
-    title.textContent = 'Price History';
+    title.textContent = 'Keepa Price History';
     headerRow.appendChild(title);
 
-    // Share button
-    var shareBtn = document.createElement('span');
-    shareBtn.textContent = 'Share';
-    shareBtn.style.cssText = css({
-      background: btnBg, border: 'none', 'border-radius': '4px',
-      padding: '4px 10px', 'font-size': '12px', color: btnColor,
-      cursor: 'pointer', display: 'inline-block'
+    var linkOut = document.createElement('a');
+    linkOut.href = 'https://keepa.com/#!product/' + keepaId + '-' + asin;
+    linkOut.target = '_blank';
+    linkOut.rel = 'noopener';
+    linkOut.textContent = 'Open in Keepa';
+    linkOut.style.cssText = css({
+      'font-size': '12px', color: labelColor, 'text-decoration': 'none'
     });
-    shareBtn.onclick = function (e) {
-      e.preventDefault(); e.stopPropagation();
-      var productUrl = window.location.href;
-      var productTitle = document.title || 'Amazon Product';
-      try {
-        if (typeof AmznKillerBridge !== 'undefined') {
-          AmznKillerBridge.shareProduct(productUrl, productTitle);
-        }
-      } catch (err) { /* bridge unavailable */ }
-    };
-    headerRow.appendChild(shareBtn);
+    headerRow.appendChild(linkOut);
     c.appendChild(headerRow);
 
-    // Controls row — use a single row with inline-block spans as buttons
+    // Controls row
     var controls = document.createElement('div');
     controls.style.cssText = css({
       display: 'flex', 'flex-direction': 'row', 'align-items': 'center',
@@ -144,6 +121,7 @@
       for (var i = 0; i < items.length; i++) {
         (function (item) {
           var btn = document.createElement('span');
+          btn.setAttribute('data-btn', '1');
           btn.textContent = item.label;
           var isActive = item.key === activeKey;
           btn.style.cssText = css({
@@ -188,20 +166,20 @@
 
     controls.appendChild(makeButtonGroup(rangeItems, currentRange, function (key) {
       currentRange = key;
-      updateKeepaImage();
+      updateImage();
     }));
 
     controls.appendChild(makeButtonGroup(typeItems, currentType, function (key) {
       currentType = key;
-      updateKeepaImage();
+      updateImage();
     }));
 
     c.appendChild(controls);
 
-    // Keepa chart
-    var keepaWrap = document.createElement('div');
-    keepaWrap.style.cssText = css({
-      position: 'relative', 'margin-bottom': '8px', 'min-height': '120px',
+    // Chart image wrapper
+    var imgWrap = document.createElement('div');
+    imgWrap.style.cssText = css({
+      position: 'relative', 'margin-bottom': '8px', 'min-height': '200px',
       overflow: 'hidden', 'border-radius': '4px'
     });
 
@@ -211,104 +189,66 @@
       transform: 'translate(-50%,-50%)', 'z-index': '2',
       width: '24px', height: '24px', border: '3px solid ' + borderColor,
       'border-top-color': btnActiveBg, 'border-radius': '50%',
-      animation: 'amzk-spin 0.8s linear infinite', display: 'none'
+      animation: 'amzk-spin-inline 0.8s linear infinite', display: 'none'
     });
+    imgWrap.appendChild(spinner);
 
-    keepaWrap.appendChild(spinner);
-
-    var keepaLabel = document.createElement('div');
-    keepaLabel.style.cssText = css({
-      'font-size': '12px', color: labelColor, 'margin-bottom': '4px'
-    });
-    keepaLabel.textContent = 'Keepa';
-
-    var keepaImg = document.createElement('img');
-    keepaImg.src = buildKeepaUrl(currentRange, currentType);
-    keepaImg.style.cssText = css({
+    var chartImg = document.createElement('img');
+    chartImg.src = buildUrl(currentRange, currentType);
+    chartImg.style.cssText = css({
       width: '100%', height: 'auto', 'border-radius': '4px',
       filter: darkFilter, transition: 'opacity 0.3s ease', display: 'block'
     });
-    keepaImg.alt = 'Keepa chart for ' + asin;
-    keepaImg.onerror = function () { keepaWrap.style.display = 'none'; };
+    chartImg.alt = 'Keepa price history for ' + asin;
+    chartImg.onerror = function () {
+      imgWrap.style.setProperty('min-height', '0', 'important');
+      chartImg.style.display = 'none';
+      spinner.style.display = 'none';
+    };
+    imgWrap.appendChild(chartImg);
+    c.appendChild(imgWrap);
 
-    keepaWrap.appendChild(keepaLabel);
-    keepaWrap.appendChild(keepaImg);
-    c.appendChild(keepaWrap);
-
-    // Update chart: swap src directly, use img's own onload instead of Image()
-    function updateKeepaImage() {
-      var newUrl = buildKeepaUrl(currentRange, currentType);
+    function updateImage() {
+      var newUrl = buildUrl(currentRange, currentType);
       spinner.style.setProperty('display', 'block', 'important');
-      keepaImg.style.setProperty('opacity', '0.4', 'important');
-      keepaImg.onload = function () {
-        keepaImg.style.setProperty('opacity', '1', 'important');
+      chartImg.style.setProperty('opacity', '0.4', 'important');
+      chartImg.onload = function () {
+        chartImg.style.setProperty('opacity', '1', 'important');
         spinner.style.setProperty('display', 'none', 'important');
-        keepaImg.onload = null;
+        chartImg.onload = null;
       };
-      keepaImg.onerror = function () {
-        keepaImg.style.setProperty('opacity', '1', 'important');
+      chartImg.onerror = function () {
+        chartImg.style.setProperty('opacity', '1', 'important');
         spinner.style.setProperty('display', 'none', 'important');
       };
-      keepaImg.src = newUrl;
+      chartImg.src = newUrl;
     }
 
-    // CamelCamelCamel chart
-    var camelWrap = document.createElement('div');
-    camelWrap.style.cssText = css({ 'margin-bottom': '8px' });
-
-    var camelLabel = document.createElement('div');
-    camelLabel.style.cssText = css({
-      'font-size': '12px', color: labelColor, 'margin-bottom': '4px'
+    // Interactive chart button
+    var keepaPageUrl = 'https://keepa.com/#!product/' + keepaId + '-' + asin;
+    var interactiveBtn = document.createElement('span');
+    interactiveBtn.textContent = 'Open Interactive Chart';
+    interactiveBtn.style.cssText = css({
+      width: '100%', padding: '10px', background: btnActiveBg,
+      color: '#fff', border: 'none', 'border-radius': '6px',
+      'font-size': '13px', 'font-weight': '600', cursor: 'pointer',
+      'margin-top': '4px', display: 'block', 'text-align': 'center',
+      'user-select': 'none', '-webkit-user-select': 'none'
     });
-    camelLabel.textContent = 'CamelCamelCamel';
-
-    var camelLink = document.createElement('a');
-    camelLink.href = 'https://' + (camelLocale === 'us' ? '' : camelLocale + '.') +
-      'camelcamelcamel.com/product/' + asin;
-    camelLink.target = '_blank';
-    camelLink.rel = 'noopener';
-
-    var camelImg = document.createElement('img');
-    camelImg.src = buildCamelUrl();
-    camelImg.style.cssText = css({
-      width: '100%', height: 'auto', 'border-radius': '4px',
-      filter: darkFilter, display: 'block'
-    });
-    camelImg.alt = 'CamelCamelCamel chart for ' + asin;
-    camelImg.onerror = function () { camelWrap.style.display = 'none'; };
-
-    camelLink.appendChild(camelImg);
-    camelWrap.appendChild(camelLabel);
-    camelWrap.appendChild(camelLink);
-    c.appendChild(camelWrap);
-
-    // Interactive chart button — fallback to opening URL in browser if bridge missing
-    if (interactiveEnabled) {
-      var keepaPageUrl = 'https://keepa.com/#!product/' + keepaId + '-' + asin;
-      var interactiveBtn = document.createElement('span');
-      interactiveBtn.textContent = 'Open Interactive Chart';
-      interactiveBtn.style.cssText = css({
-        width: '100%', padding: '10px', background: btnActiveBg,
-        color: '#fff', border: 'none', 'border-radius': '6px',
-        'font-size': '13px', 'font-weight': '600', cursor: 'pointer',
-        'margin-top': '4px', display: 'block', 'text-align': 'center',
-        'user-select': 'none', '-webkit-user-select': 'none'
-      });
-      interactiveBtn.onclick = function (e) {
-        e.preventDefault(); e.stopPropagation();
-        var bridgeOk = false;
-        try {
-          if (typeof AmznKillerBridge !== 'undefined' && AmznKillerBridge.openInteractiveChart) {
-            AmznKillerBridge.openInteractiveChart(asin, keepaId);
-            bridgeOk = true;
-          }
-        } catch (err) { /* bridge call failed */ }
-        if (!bridgeOk) {
-          window.open(keepaPageUrl, '_blank');
+    interactiveBtn.onclick = function (e) {
+      e.preventDefault(); e.stopPropagation();
+      var bridgeOk = false;
+      try {
+        if (typeof AmznKillerBridge !== 'undefined' && AmznKillerBridge.openInteractiveChart) {
+          AmznKillerBridge.openInteractiveChart(asin, keepaId);
+          bridgeOk = true;
         }
-      };
-      c.appendChild(interactiveBtn);
-    }
+      } catch (err) { /* bridge call failed */ }
+      if (!bridgeOk) {
+        window.open(keepaPageUrl, '_blank');
+      }
+    };
+    c.appendChild(interactiveBtn);
 
     // Insert into page
     var targets = [
@@ -348,6 +288,7 @@
       obs.observe(document.body || document.documentElement, { childList: true, subtree: true });
       setTimeout(function () { obs.disconnect(); }, 10000);
     }
+
     return null;
   };
 })();
