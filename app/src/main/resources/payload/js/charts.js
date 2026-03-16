@@ -16,13 +16,20 @@
   };
 
   window.AmznKiller.injectCharts = function (args) {
-    if (document.getElementById('amznkiller-charts')) return null;
-
     var asin = args.asin;
     var domain = args.domain || window.location.hostname.replace(/^www\./, '');
     var keepaId = args.keepaId || KEEPA_DOMAINS[domain] || 1;
     var camelLocale = args.camelLocale || CAMEL_LOCALES[domain] || 'us';
     var dark = !!(args && args.dark);
+
+    var existing = document.getElementById('amznkiller-charts');
+    if (existing) {
+      if (existing.getAttribute('data-asin') === asin) return null;
+      existing.remove();
+      window.AmznKiller._pendingAsin = null;
+    }
+    if (window.AmznKiller._pendingAsin === asin) return null;
+    window.AmznKiller._pendingAsin = asin;
 
     var keepaUrl = 'https://graph.keepa.com/pricehistory.png?used=1&amazon=1&new=1&domain=' + keepaId + '&asin=' + asin;
 
@@ -35,12 +42,15 @@
 
     var c = document.createElement('div');
     c.id = 'amznkiller-charts';
+    c.setAttribute('data-asin', asin);
     c.style.cssText = 'margin:16px 0;padding:12px;border:1px solid ' + borderColor + ';border-radius:8px;background:' + bgColor;
 
     var title = document.createElement('div');
     title.style.cssText = 'font-weight:bold;font-size:14px;margin-bottom:8px;color:' + titleColor;
     title.textContent = 'Price History';
     c.appendChild(title);
+
+    var MIN_CHART_BYTES = 15000;
 
     function addChart(url, label, linkBase, imgStyle) {
       var w = document.createElement('div');
@@ -61,6 +71,12 @@
       a.appendChild(img);
       w.appendChild(a);
       c.appendChild(w);
+      // Hide error/placeholder images
+      fetch(url).then(function (r) {
+        return r.ok ? r.blob() : null;
+      }).then(function (blob) {
+        if (!blob || blob.size < MIN_CHART_BYTES) w.style.display = 'none';
+      }).catch(function () {});
     }
 
     var keepaLink = 'https://keepa.com/#!product/' + keepaId + '-' + asin;
@@ -113,6 +129,21 @@
       obs.observe(document.body || document.documentElement, { childList: true, subtree: true });
       setTimeout(function () { obs.disconnect(); }, 10000);
     }
+    // Re-inject on SPA variant navigation
+    if (!window.AmznKiller._chartHooked) {
+      window.AmznKiller._chartHooked = true;
+      var re = /\/(?:dp|gp\/product)\/([A-Z0-9]{10})/i;
+      function onNav() {
+        var m = window.location.href.match(re);
+        if (m) window.AmznKiller.injectCharts({ asin: m[1], dark: dark, domain: domain });
+      }
+      var push = history.pushState;
+      var replace = history.replaceState;
+      history.pushState = function () { push.apply(this, arguments); onNav(); };
+      history.replaceState = function () { replace.apply(this, arguments); onNav(); };
+      window.addEventListener('popstate', onNav);
+    }
+
     return null;
   };
 })();
