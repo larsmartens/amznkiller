@@ -33,8 +33,6 @@
   }
 
   window.AmznKiller.injectCharts = function (args) {
-    if (document.getElementById('amznkiller-charts')) return null;
-
     var asin = args.asin;
     var domain = args.domain || window.location.hostname.replace(/^www\./, '');
     var keepaId = args.keepaId || KEEPA_DOMAINS[domain] || 1;
@@ -348,6 +346,21 @@
       obs.observe(document.body || document.documentElement, { childList: true, subtree: true });
       setTimeout(function () { obs.disconnect(); }, 10000);
     }
+    // Re-inject on SPA variant navigation
+    if (!window.AmznKiller._chartHooked) {
+      window.AmznKiller._chartHooked = true;
+      var re = /\/(?:dp|gp\/product)\/([A-Z0-9]{10})/i;
+      function onNav() {
+        var m = window.location.href.match(re);
+        if (m) window.AmznKiller.injectCharts({ asin: m[1], dark: dark, domain: domain });
+      }
+      var push = history.pushState;
+      var replace = history.replaceState;
+      history.pushState = function () { push.apply(this, arguments); onNav(); };
+      history.replaceState = function () { replace.apply(this, arguments); onNav(); };
+      window.addEventListener('popstate', onNav);
+    }
+
     return null;
   };
 })();
