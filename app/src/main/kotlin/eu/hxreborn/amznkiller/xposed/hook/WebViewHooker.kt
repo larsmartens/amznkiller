@@ -6,9 +6,6 @@ import eu.hxreborn.amznkiller.util.Logger
 import eu.hxreborn.amznkiller.xposed.bridge.ChartBridge
 import eu.hxreborn.amznkiller.xposed.runtime.PageRuntime
 import io.github.libxposed.api.XposedInterface
-import io.github.libxposed.api.XposedInterface.AfterHookCallback
-import io.github.libxposed.api.annotations.AfterInvocation
-import io.github.libxposed.api.annotations.XposedHooker
 
 object WebViewHooker {
     fun hook(xposed: XposedInterface) {
@@ -16,7 +13,13 @@ object WebViewHooker {
             when (method.name) {
                 "onPageStarted" -> {
                     runCatching {
-                        xposed.hook(method, PageStartedHooker::class.java)
+                        xposed.hook(method).intercept { chain ->
+                            chain.proceed()
+                            val webView =
+                                chain.getArg(0) as? WebView ?: return@intercept null
+                            PageRuntime.onPageStarted(webView)
+                            null
+                        }
                     }.onSuccess {
                         Logger.log("Hooked ${method.name}")
                     }.onFailure {
@@ -28,7 +31,15 @@ object WebViewHooker {
                 "onPageCommitVisible",
                 -> {
                     runCatching {
-                        xposed.hook(method, PageHooker::class.java)
+                        xposed.hook(method).intercept { chain ->
+                            chain.proceed()
+                            val webView =
+                                chain.getArg(0) as? WebView ?: return@intercept null
+                            val url =
+                                chain.getArg(1) as? String ?: return@intercept null
+                            PageRuntime.onPageLoaded(webView, url)
+                            null
+                        }
                     }.onSuccess {
                         Logger.log("Hooked ${method.name}")
                     }.onFailure {
