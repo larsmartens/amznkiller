@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: write
-  workflows: write
 
 concurrency:
   group: sync-upstream
@@ -41,6 +40,10 @@ jobs:
           echo "behind=$BEHIND" >> "$GITHUB_OUTPUT"
           echo "Upstream is $BEHIND commit(s) ahead"
 
+      - name: Capture fork baseline
+        id: base
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       - name: Merge upstream
         if: steps.check.outputs.behind != '0'
         run: |
@@ -61,6 +64,15 @@ jobs:
           if ! git diff --quiet; then
             git add README.md app/src/main/kotlin/eu/hxreborn/amznkiller/prefs/Prefs.kt app/src/main/kotlin/eu/hxreborn/amznkiller/ui/screen/settings/SettingsScreen.kt .github/ISSUE_TEMPLATE/config.yml
             git commit -m "chore: re-apply fork references after upstream sync"
+          fi
+
+      - name: Restore fork workflows
+        if: steps.check.outputs.behind != '0'
+        run: |
+          git restore --source="${{ steps.base.outputs.sha }}" --staged --worktree .github/workflows || true
+          if ! git diff --quiet -- .github/workflows; then
+            git add .github/workflows
+            git commit -m "chore: preserve fork workflows after upstream sync"
           fi
 
       - name: Push synced branch
