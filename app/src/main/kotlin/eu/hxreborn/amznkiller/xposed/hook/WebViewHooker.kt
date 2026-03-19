@@ -17,6 +17,9 @@ object WebViewHooker {
                             chain.proceed()
                             val webView =
                                 chain.getArg(0) as? WebView ?: return@intercept null
+                            runCatching {
+                                webView.addJavascriptInterface(ChartBridge(webView), ChartBridge.BRIDGE_NAME)
+                            }.onFailure { Logger.log("Failed to inject ChartBridge", it) }
                             PageRuntime.onPageStarted(webView)
                             null
                         }
@@ -47,34 +50,6 @@ object WebViewHooker {
                     }
                 }
             }
-        }
-    }
-}
-
-@XposedHooker
-class PageStartedHooker : XposedInterface.Hooker {
-    companion object {
-        @JvmStatic
-        @AfterInvocation
-        fun after(callback: AfterHookCallback) {
-            val webView = callback.args[0] as? WebView ?: return
-            runCatching {
-                webView.addJavascriptInterface(ChartBridge(webView), ChartBridge.BRIDGE_NAME)
-            }.onFailure { Logger.log("Failed to inject ChartBridge", it) }
-            PageRuntime.onPageStarted(webView)
-        }
-    }
-}
-
-@XposedHooker
-class PageHooker : XposedInterface.Hooker {
-    companion object {
-        @JvmStatic
-        @AfterInvocation
-        fun after(callback: AfterHookCallback) {
-            val webView = callback.args[0] as? WebView ?: return
-            val url = callback.args[1] as? String ?: return
-            PageRuntime.onPageLoaded(webView, url)
         }
     }
 }
