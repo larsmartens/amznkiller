@@ -18,7 +18,10 @@ object WebViewHooker {
                             val webView =
                                 chain.getArg(0) as? WebView ?: return@intercept null
                             runCatching {
-                                webView.addJavascriptInterface(ChartBridge(webView), ChartBridge.BRIDGE_NAME)
+                                webView.addJavascriptInterface(
+                                    ChartBridge(webView),
+                                    ChartBridge.BRIDGE_NAME,
+                                )
                             }.onFailure { Logger.log("Failed to inject ChartBridge", it) }
                             PageRuntime.onPageStarted(webView)
                             null
