@@ -4,16 +4,19 @@ import androidx.compose.runtime.Immutable
 import eu.hxreborn.amznkiller.prefs.Prefs
 import eu.hxreborn.amznkiller.ui.theme.DarkThemeConfig
 
-@Immutable
-data class SettingsUiState(
-    val isInitialized: Boolean = false,
-    val selectorUrl: String = Prefs.SELECTOR_URL.default,
-    val autoUpdate: Boolean = Prefs.AUTO_UPDATE.default,
-    val injectionEnabled: Boolean = Prefs.INJECTION_ENABLED.default,
-    val debugLogs: Boolean = Prefs.DEBUG_LOGS.default,
-    val webviewDebugging: Boolean = Prefs.WEBVIEW_DEBUGGING.default,
-    val forceDarkWebview: Boolean = Prefs.FORCE_DARK_WEBVIEW.default,
-    val priceChartsEnabled: Boolean = Prefs.PRICE_CHARTS_ENABLED.default,
-    val darkThemeConfig: DarkThemeConfig = DarkThemeConfig.FOLLOW_SYSTEM,
-    val useDynamicColor: Boolean = Prefs.USE_DYNAMIC_COLOR.default,
-)
+sealed interface SettingsUiState {
+    data object Loading : SettingsUiState
+
+    @Immutable
+    data class Ready(
+        val selectorUrl: String = Prefs.SELECTOR_URL.default,
+        val autoUpdate: Boolean = Prefs.AUTO_UPDATE.default,
+        val injectionEnabled: Boolean = Prefs.INJECTION_ENABLED.default,
+        val debugLogs: Boolean = Prefs.DEBUG_LOGS.default,
+        val webviewDebugging: Boolean = Prefs.WEBVIEW_DEBUGGING.default,
+        val forceDarkWebview: Boolean = Prefs.FORCE_DARK_WEBVIEW.default,
+        val priceChartsEnabled: Boolean = Prefs.PRICE_CHARTS_ENABLED.default,
+        val darkThemeConfig: DarkThemeConfig = DarkThemeConfig.FOLLOW_SYSTEM,
+        val useDynamicColor: Boolean = Prefs.USE_DYNAMIC_COLOR.default,
+    ) : SettingsUiState
+}

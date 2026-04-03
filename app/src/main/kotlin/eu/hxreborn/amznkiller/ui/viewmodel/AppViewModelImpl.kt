@@ -22,6 +22,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.seconds
+import eu.hxreborn.amznkiller.ui.state.DashboardUiState.Loading as DashboardLoading
+import eu.hxreborn.amznkiller.ui.state.DashboardUiState.Ready as DashboardReady
+import eu.hxreborn.amznkiller.ui.state.SettingsUiState.Loading as SettingsLoading
+import eu.hxreborn.amznkiller.ui.state.SettingsUiState.Ready as SettingsReady
 
 class AppViewModelImpl(
     private val repository: PrefsRepository,
@@ -39,8 +43,7 @@ class AppViewModelImpl(
             lastRefreshOutcome,
             frameworkVersion,
         ) { prefs, isRefreshing, active, outcome, fwVersion ->
-            DashboardUiState(
-                isInitialized = true,
+            DashboardReady(
                 isXposedActive = active,
                 frameworkVersion = fwVersion,
                 isRefreshing = isRefreshing,
@@ -54,14 +57,13 @@ class AppViewModelImpl(
         }.stateIn(
             scope = viewModelScope,
             started = WhileSubscribed(5.seconds.inWholeMilliseconds),
-            initialValue = DashboardUiState(),
+            initialValue = DashboardLoading,
         )
 
     override val settingsUiState: StateFlow<SettingsUiState> =
         repository.state
             .map { prefs ->
-                SettingsUiState(
-                    isInitialized = true,
+                SettingsReady(
                     selectorUrl = prefs.selectorUrl,
                     autoUpdate = prefs.autoUpdate,
                     injectionEnabled = prefs.injectionEnabled,
@@ -75,7 +77,7 @@ class AppViewModelImpl(
             }.stateIn(
                 scope = viewModelScope,
                 started = WhileSubscribed(5.seconds.inWholeMilliseconds),
-                initialValue = SettingsUiState(),
+                initialValue = SettingsLoading,
             )
 
     override fun refreshAll() {

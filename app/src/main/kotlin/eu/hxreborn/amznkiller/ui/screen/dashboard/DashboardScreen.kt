@@ -39,6 +39,8 @@ import eu.hxreborn.amznkiller.prefs.PrefSpec
 import eu.hxreborn.amznkiller.ui.preview.PreviewLightDark
 import eu.hxreborn.amznkiller.ui.preview.PreviewWrapper
 import eu.hxreborn.amznkiller.ui.state.DashboardUiState
+import eu.hxreborn.amznkiller.ui.state.DashboardUiState.Loading
+import eu.hxreborn.amznkiller.ui.state.DashboardUiState.Ready
 import eu.hxreborn.amznkiller.ui.state.SettingsUiState
 import eu.hxreborn.amznkiller.ui.theme.Tokens
 import eu.hxreborn.amznkiller.ui.viewmodel.AppViewModel
@@ -58,8 +60,12 @@ fun DashboardScreen(
     viewModel: AppViewModel,
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
-    val state by viewModel.dashboardUiState.collectAsStateWithLifecycle()
-    if (!state.isInitialized) return
+    val uiState by viewModel.dashboardUiState.collectAsStateWithLifecycle()
+    val state =
+        when (val s = uiState) {
+            Loading -> return
+            is Ready -> s
+        }
     val snackbarHostState = remember { SnackbarHostState() }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val context = LocalContext.current
@@ -216,8 +222,7 @@ private fun DashboardScreenPreview() {
 private class PreviewAppViewModel : AppViewModel() {
     override val dashboardUiState: StateFlow<DashboardUiState> =
         MutableStateFlow(
-            DashboardUiState(
-                isInitialized = true,
+            Ready(
                 isXposedActive = true,
                 frameworkVersion = "LSPosed v1.11.0",
                 isRefreshing = false,
@@ -226,11 +231,11 @@ private class PreviewAppViewModel : AppViewModel() {
                 selectorCount = 42,
                 lastFetched = System.currentTimeMillis() - 3_600_000,
                 injectionEnabled = true,
+                lastRefreshOutcome = null,
             ),
         ).asStateFlow()
 
-    override val settingsUiState: StateFlow<SettingsUiState> =
-        MutableStateFlow(SettingsUiState()).asStateFlow()
+    override val settingsUiState: StateFlow<SettingsUiState> = MutableStateFlow(SettingsUiState.Ready()).asStateFlow()
 
     override fun refreshAll() {}
 

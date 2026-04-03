@@ -58,6 +58,8 @@ import eu.hxreborn.amznkiller.ui.preview.PreviewLightDark
 import eu.hxreborn.amznkiller.ui.preview.PreviewWrapper
 import eu.hxreborn.amznkiller.ui.state.DashboardUiState
 import eu.hxreborn.amznkiller.ui.state.SettingsUiState
+import eu.hxreborn.amznkiller.ui.state.SettingsUiState.Loading
+import eu.hxreborn.amznkiller.ui.state.SettingsUiState.Ready
 import eu.hxreborn.amznkiller.ui.theme.DarkThemeConfig
 import eu.hxreborn.amznkiller.ui.theme.Tokens
 import eu.hxreborn.amznkiller.ui.util.shapeForPosition
@@ -79,8 +81,12 @@ fun SettingsScreen(
     contentPadding: PaddingValues = PaddingValues(0.dp),
     onNavigateToLicenses: () -> Unit = {},
 ) {
-    val prefs by viewModel.settingsUiState.collectAsStateWithLifecycle()
-    if (!prefs.isInitialized) return
+    val uiState by viewModel.settingsUiState.collectAsStateWithLifecycle()
+    val prefs =
+        when (val s = uiState) {
+            Loading -> return
+            is Ready -> s
+        }
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var showThemeDialog by remember { mutableStateOf(false) }
@@ -581,13 +587,11 @@ private fun SettingsScreenPreview() {
 }
 
 private class PreviewSettingsViewModel : AppViewModel() {
-    override val dashboardUiState: StateFlow<DashboardUiState> =
-        MutableStateFlow(DashboardUiState()).asStateFlow()
+    override val dashboardUiState: StateFlow<DashboardUiState> = MutableStateFlow(DashboardUiState.Loading).asStateFlow()
 
     override val settingsUiState: StateFlow<SettingsUiState> =
         MutableStateFlow(
-            SettingsUiState(
-                isInitialized = true,
+            Ready(
                 darkThemeConfig = DarkThemeConfig.FOLLOW_SYSTEM,
                 useDynamicColor = true,
                 debugLogs = false,

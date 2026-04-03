@@ -2,16 +2,19 @@ package eu.hxreborn.amznkiller.ui.state
 
 import androidx.compose.runtime.Immutable
 
-@Immutable
-data class DashboardUiState(
-    val isInitialized: Boolean = false,
-    val isXposedActive: Boolean = false,
-    val frameworkVersion: String? = null,
-    val isRefreshing: Boolean = false,
-    val isRefreshFailed: Boolean = false,
-    val isStale: Boolean = true,
-    val lastFetched: Long = 0L,
-    val selectorCount: Int = 0,
-    val injectionEnabled: Boolean = true,
-    val lastRefreshOutcome: SelectorSyncOutcome? = null,
-)
+sealed interface DashboardUiState {
+    data object Loading : DashboardUiState
+
+    @Immutable
+    data class Ready(
+        val isXposedActive: Boolean,
+        val frameworkVersion: String?,
+        val isRefreshing: Boolean,
+        val isRefreshFailed: Boolean,
+        val isStale: Boolean,
+        val lastFetched: Long,
+        val selectorCount: Int,
+        val injectionEnabled: Boolean,
+        val lastRefreshOutcome: SelectorSyncOutcome?,
+    ) : DashboardUiState
+}
