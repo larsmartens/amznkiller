@@ -9,15 +9,16 @@ import eu.hxreborn.amznkiller.prefs.Prefs
 import eu.hxreborn.amznkiller.prefs.PrefsRepository
 import eu.hxreborn.amznkiller.selectors.MergeResult
 import eu.hxreborn.amznkiller.selectors.SelectorUpdater
-import eu.hxreborn.amznkiller.ui.state.AppPrefsState
-import eu.hxreborn.amznkiller.ui.state.AppUiState
+import eu.hxreborn.amznkiller.ui.state.DashboardUiState
 import eu.hxreborn.amznkiller.ui.state.SelectorSyncEvent
 import eu.hxreborn.amznkiller.ui.state.SelectorSyncOutcome
+import eu.hxreborn.amznkiller.ui.state.SettingsUiState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted.Companion.WhileSubscribed
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.seconds
@@ -30,27 +31,52 @@ class AppViewModelImpl(
     private val frameworkVersion = MutableStateFlow<String?>(null)
     private val lastRefreshOutcome = MutableStateFlow<SelectorSyncOutcome?>(null)
 
-    override val uiState: StateFlow<AppUiState> =
+    override val dashboardUiState: StateFlow<DashboardUiState> =
         combine(
             repository.state,
             refreshing,
             xposedActive,
             lastRefreshOutcome,
             frameworkVersion,
-        ) { prefs: AppPrefsState, isRefreshing: Boolean, active: Boolean, outcome: SelectorSyncOutcome?, fwVersion: String? ->
-            AppUiState.Success(
-                prefs.copy(
-                    isXposedActive = active,
-                    frameworkVersion = fwVersion,
-                    isRefreshing = isRefreshing,
-                    lastRefreshOutcome = outcome,
-                ),
+        ) { prefs, isRefreshing, active, outcome, fwVersion ->
+            DashboardUiState(
+                isInitialized = true,
+                isXposedActive = active,
+                frameworkVersion = fwVersion,
+                isRefreshing = isRefreshing,
+                isRefreshFailed = prefs.isRefreshFailed,
+                isStale = prefs.isStale,
+                lastFetched = prefs.lastFetched,
+                selectorCount = prefs.selectorCount,
+                injectionEnabled = prefs.injectionEnabled,
+                lastRefreshOutcome = outcome,
             )
         }.stateIn(
             scope = viewModelScope,
             started = WhileSubscribed(5.seconds.inWholeMilliseconds),
-            initialValue = AppUiState.Loading,
+            initialValue = DashboardUiState(),
         )
+
+    override val settingsUiState: StateFlow<SettingsUiState> =
+        repository.state
+            .map { prefs ->
+                SettingsUiState(
+                    isInitialized = true,
+                    selectorUrl = prefs.selectorUrl,
+                    autoUpdate = prefs.autoUpdate,
+                    injectionEnabled = prefs.injectionEnabled,
+                    debugLogs = prefs.debugLogs,
+                    webviewDebugging = prefs.webviewDebugging,
+                    forceDarkWebview = prefs.forceDarkWebview,
+                    priceChartsEnabled = prefs.priceChartsEnabled,
+                    darkThemeConfig = prefs.darkThemeConfig,
+                    useDynamicColor = prefs.useDynamicColor,
+                )
+            }.stateIn(
+                scope = viewModelScope,
+                started = WhileSubscribed(5.seconds.inWholeMilliseconds),
+                initialValue = SettingsUiState(),
+            )
 
     override fun refreshAll() {
         if (refreshing.value) return

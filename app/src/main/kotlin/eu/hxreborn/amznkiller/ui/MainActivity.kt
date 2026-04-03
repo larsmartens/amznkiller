@@ -11,9 +11,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.hxreborn.amznkiller.App
 import eu.hxreborn.amznkiller.prefs.Prefs
 import eu.hxreborn.amznkiller.prefs.PrefsRepositoryImpl
-import eu.hxreborn.amznkiller.ui.state.AppUiState
+import eu.hxreborn.amznkiller.ui.state.SettingsUiState
 import eu.hxreborn.amznkiller.ui.theme.AppTheme
-import eu.hxreborn.amznkiller.ui.theme.DarkThemeConfig
 import eu.hxreborn.amznkiller.ui.viewmodel.AppViewModel
 import eu.hxreborn.amznkiller.ui.viewmodel.AppViewModelFactory
 import io.github.libxposed.service.XposedService
@@ -41,12 +40,11 @@ class MainActivity :
         App.addServiceListener(this)
 
         setContent {
-            val uiState = viewModel.uiState.collectAsStateWithLifecycle()
-            val prefs = (uiState.value as? AppUiState.Success)?.prefs
+            val settings = viewModel.settingsUiState.collectAsStateWithLifecycle()
 
             AppTheme(
-                darkThemeConfig = prefs?.darkThemeConfig ?: DarkThemeConfig.FOLLOW_SYSTEM,
-                useDynamicColor = prefs?.useDynamicColor ?: true,
+                darkThemeConfig = settings.value.darkThemeConfig,
+                useDynamicColor = settings.value.useDynamicColor,
             ) {
                 MainScaffold(viewModel = viewModel)
             }
