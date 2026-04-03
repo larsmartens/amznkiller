@@ -5,7 +5,6 @@ import android.os.Build
 import android.webkit.WebView
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,7 +30,6 @@ import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Extension
 import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.ShoppingCart
-import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.CloudDone
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.SystemUpdate
@@ -73,7 +71,6 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.hxreborn.amznkiller.R
 import eu.hxreborn.amznkiller.prefs.PrefSpec
-import eu.hxreborn.amznkiller.ui.component.RulesBottomSheet
 import eu.hxreborn.amznkiller.ui.preview.PreviewLightDark
 import eu.hxreborn.amznkiller.ui.preview.PreviewWrapper
 import eu.hxreborn.amznkiller.ui.state.AppPrefsState
@@ -103,7 +100,6 @@ fun DashboardScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val context = LocalContext.current
-    var showRulesSheet by remember { mutableStateOf(false) }
     var lastHandledOutcomeId by remember { mutableStateOf<Long?>(null) }
     val tagline =
         rememberSaveable {
@@ -277,7 +273,6 @@ fun DashboardScreen(
                         MetricsGrid(
                             prefs = prefs,
                             surface = surface,
-                            onShowRules = { showRulesSheet = true },
                         )
                     }
 
@@ -289,13 +284,6 @@ fun DashboardScreen(
                             surface = surface,
                         )
                     }
-                }
-
-                if (showRulesSheet) {
-                    RulesBottomSheet(
-                        selectors = prefs.cachedSelectors,
-                        onDismiss = { showRulesSheet = false },
-                    )
                 }
             }
         }
@@ -566,7 +554,6 @@ private fun SystemEnvironmentCard(
 private fun MetricsGrid(
     prefs: AppPrefsState,
     surface: Color,
-    onShowRules: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val shape = Tokens.CardShape
@@ -612,29 +599,15 @@ private fun MetricsGrid(
                     .weight(1f)
                     .background(color = surface, shape = shape)
                     .clip(shape)
-                    .then(if (adBlockingActive) Modifier.clickable(onClick = onShowRules) else Modifier)
                     .padding(16.dp)
                     .then(if (adBlockingActive) Modifier else Modifier.alpha(0.38f)),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.Rule,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                if (adBlockingActive) {
-                    Spacer(Modifier.weight(1f))
-                    Icon(
-                        imageVector = Icons.Rounded.ChevronRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Outlined.Rule,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Spacer(Modifier.height(12.dp))
             Text(
                 text =
@@ -751,12 +724,6 @@ private class PreviewAppViewModel : AppViewModel() {
                         isStale = false,
                         selectorCount = 42,
                         lastFetched = System.currentTimeMillis() - 3_600_000,
-                        cachedSelectors =
-                            listOf(
-                                ".s-sponsored-label",
-                                ".a-section.a-spacing-none",
-                                "[data-component-type=\"sp\"]",
-                            ),
                         injectionEnabled = true,
                     ),
             ),
