@@ -33,7 +33,6 @@ class PrefsRepositoryImpl(
                 val lastFetched = Prefs.LAST_FETCHED.read(localPrefs)
                 trySend(
                     AppPrefsState(
-                        cachedSelectors = selectors,
                         selectorCount = selectors.size,
                         selectorUrl = Prefs.SELECTOR_URL.read(localPrefs),
                         lastFetched = lastFetched,

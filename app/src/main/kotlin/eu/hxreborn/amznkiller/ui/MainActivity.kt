@@ -11,13 +11,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.hxreborn.amznkiller.App
 import eu.hxreborn.amznkiller.prefs.Prefs
 import eu.hxreborn.amznkiller.prefs.PrefsRepositoryImpl
-import eu.hxreborn.amznkiller.ui.state.AppUiState
 import eu.hxreborn.amznkiller.ui.theme.AppTheme
 import eu.hxreborn.amznkiller.ui.theme.DarkThemeConfig
 import eu.hxreborn.amznkiller.ui.viewmodel.AppViewModel
 import eu.hxreborn.amznkiller.ui.viewmodel.AppViewModelFactory
 import io.github.libxposed.service.XposedService
 import io.github.libxposed.service.XposedServiceHelper
+import eu.hxreborn.amznkiller.ui.state.SettingsUiState.Loading as SettingsLoading
+import eu.hxreborn.amznkiller.ui.state.SettingsUiState.Ready as SettingsReady
 
 class MainActivity :
     ComponentActivity(),
@@ -34,19 +35,27 @@ class MainActivity :
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
+        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
         App.addServiceListener(this)
 
+        splashScreen.setKeepOnScreenCondition {
+            viewModel.settingsUiState.value is SettingsLoading
+        }
+
         setContent {
-            val uiState = viewModel.uiState.collectAsStateWithLifecycle()
-            val prefs = (uiState.value as? AppUiState.Success)?.prefs
+            val settings = viewModel.settingsUiState.collectAsStateWithLifecycle()
+            val (darkThemeConfig, useDynamicColor) =
+                when (val s = settings.value) {
+                    is SettingsLoading -> DarkThemeConfig.FOLLOW_SYSTEM to false
+                    is SettingsReady -> s.darkThemeConfig to s.useDynamicColor
+                }
 
             AppTheme(
-                darkThemeConfig = prefs?.darkThemeConfig ?: DarkThemeConfig.FOLLOW_SYSTEM,
-                useDynamicColor = prefs?.useDynamicColor ?: true,
+                darkThemeConfig = darkThemeConfig,
+                useDynamicColor = useDynamicColor,
             ) {
                 MainScaffold(viewModel = viewModel)
             }

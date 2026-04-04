@@ -39,10 +39,8 @@ object WebViewHooker {
                     runCatching {
                         xposed.hook(method).intercept { chain ->
                             chain.proceed()
-                            val webView =
-                                chain.getArg(0) as? WebView ?: return@intercept null
-                            val url =
-                                chain.getArg(1) as? String ?: return@intercept null
+                            val webView = chain.getArg(0) as? WebView ?: return@intercept null
+                            val url = chain.getArg(1) as? String ?: return@intercept null
                             PageRuntime.onPageLoaded(webView, url)
                             null
                         }

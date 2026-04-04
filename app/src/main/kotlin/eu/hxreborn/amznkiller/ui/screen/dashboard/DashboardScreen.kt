@@ -1,45 +1,15 @@
 package eu.hxreborn.amznkiller.ui.screen.dashboard
 
-import android.content.Intent
-import android.os.Build
 import android.webkit.WebView
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.OpenInNew
-import androidx.compose.material.icons.automirrored.outlined.Rule
-import androidx.compose.material.icons.outlined.Android
-import androidx.compose.material.icons.outlined.Cancel
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.ErrorOutline
-import androidx.compose.material.icons.outlined.Extension
-import androidx.compose.material.icons.outlined.PhoneAndroid
-import androidx.compose.material.icons.outlined.ShoppingCart
-import androidx.compose.material.icons.rounded.ChevronRight
-import androidx.compose.material.icons.rounded.CloudDone
-import androidx.compose.material.icons.rounded.Refresh
-import androidx.compose.material.icons.rounded.SystemUpdate
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -55,14 +25,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.ColorMatrix
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -73,15 +36,13 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.hxreborn.amznkiller.R
 import eu.hxreborn.amznkiller.prefs.PrefSpec
-import eu.hxreborn.amznkiller.ui.component.RulesBottomSheet
 import eu.hxreborn.amznkiller.ui.preview.PreviewLightDark
 import eu.hxreborn.amznkiller.ui.preview.PreviewWrapper
-import eu.hxreborn.amznkiller.ui.state.AppPrefsState
-import eu.hxreborn.amznkiller.ui.state.AppUiState
-import eu.hxreborn.amznkiller.ui.state.SelectorSyncEvent
-import eu.hxreborn.amznkiller.ui.state.resolveMessage
+import eu.hxreborn.amznkiller.ui.state.DashboardUiState
+import eu.hxreborn.amznkiller.ui.state.DashboardUiState.Loading
+import eu.hxreborn.amznkiller.ui.state.DashboardUiState.Ready
+import eu.hxreborn.amznkiller.ui.state.SettingsUiState
 import eu.hxreborn.amznkiller.ui.theme.Tokens
-import eu.hxreborn.amznkiller.ui.util.relativeTime
 import eu.hxreborn.amznkiller.ui.viewmodel.AppViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -99,11 +60,15 @@ fun DashboardScreen(
     viewModel: AppViewModel,
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val uiState by viewModel.dashboardUiState.collectAsStateWithLifecycle()
+    val state =
+        when (val s = uiState) {
+            Loading -> return
+            is Ready -> s
+        }
     val snackbarHostState = remember { SnackbarHostState() }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val context = LocalContext.current
-    var showRulesSheet by remember { mutableStateOf(false) }
     var lastHandledOutcomeId by remember { mutableStateOf<Long?>(null) }
     val tagline =
         rememberSaveable {
@@ -181,553 +146,69 @@ fun DashboardScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
-        when (val state = uiState) {
-            is AppUiState.Loading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(innerPadding),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-
-            is AppUiState.Success -> {
-                val prefs = state.prefs
-
-                val outcome = prefs.lastRefreshOutcome
-                LaunchedEffect(outcome?.id) {
-                    if (outcome != null && outcome.id != lastHandledOutcomeId) {
-                        lastHandledOutcomeId = outcome.id
-                        val message =
-                            formatUpdateEventMessage(
-                                context,
-                                outcome.event,
-                            )
-                        snackbarHostState.showSnackbar(message)
-                    }
-                }
-
-                val surface = MaterialTheme.colorScheme.surfaceVariant
-
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
-                    contentPadding =
-                        PaddingValues(
-                            top = innerPadding.calculateTopPadding() + 8.dp,
-                            bottom = contentPadding.calculateBottomPadding() + 16.dp,
-                        ),
-                ) {
-                    item {
-                        UpdatesCard(
-                            prefs = prefs,
-                            surface = surface,
-                            onRefresh = { viewModel.refreshAll() },
-                        )
-                    }
-
-                    item { Spacer(Modifier.height(16.dp)) }
-
-                    item {
-                        val shape = Tokens.CardShape
-                        Column(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 8.dp)
-                                    .background(
-                                        color = surface,
-                                        shape = shape,
-                                    ).clip(shape)
-                                    .padding(16.dp),
-                        ) {
-                            TargetRow(amazonInfo) {
-                                if (amazonInfo != null) {
-                                    IconButton(
-                                        onClick = {
-                                            amazonPackage
-                                                ?.let { context.packageManager.getLaunchIntentForPackage(it) }
-                                                ?.let {
-                                                    it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                                    context.startActivity(it)
-                                                }
-                                        },
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
-                                            contentDescription =
-                                                stringResource(
-                                                    R.string.dashboard_launch,
-                                                ),
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
-                                    }
-                                }
-                            }
-                            HorizontalDivider(
-                                modifier = Modifier.padding(vertical = 12.dp),
-                                color = MaterialTheme.colorScheme.outlineVariant,
-                            )
-                            TargetRow(webViewInfo, isGrayscale = true)
-                        }
-                    }
-
-                    item { Spacer(Modifier.height(16.dp)) }
-
-                    item {
-                        MetricsGrid(
-                            prefs = prefs,
-                            surface = surface,
-                            onShowRules = { showRulesSheet = true },
-                        )
-                    }
-
-                    item { Spacer(Modifier.height(16.dp)) }
-
-                    item {
-                        SystemEnvironmentCard(
-                            prefs = prefs,
-                            surface = surface,
-                        )
-                    }
-                }
-
-                if (showRulesSheet) {
-                    RulesBottomSheet(
-                        selectors = prefs.cachedSelectors,
-                        onDismiss = { showRulesSheet = false },
-                    )
-                }
+        val outcome = state.lastRefreshOutcome
+        LaunchedEffect(outcome?.id) {
+            if (outcome != null && outcome.id != lastHandledOutcomeId) {
+                lastHandledOutcomeId = outcome.id
+                val message = formatUpdateEventMessage(context, outcome.event)
+                snackbarHostState.showSnackbar(message)
             }
         }
-    }
-}
 
-private enum class UpdateStatus { Refreshing, Error, UpToDate, Stale }
+        val surface = MaterialTheme.colorScheme.surfaceVariant
 
-@Composable
-private fun lastCheckedLine(lastFetched: Long): String = stringResource(R.string.dashboard_last_checked, relativeTime(lastFetched))
-
-@Composable
-private fun UpdatesCard(
-    prefs: AppPrefsState,
-    surface: Color,
-    onRefresh: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val context = LocalContext.current
-    val outcomeEvent = prefs.lastRefreshOutcome?.event
-    val isError = outcomeEvent is SelectorSyncEvent.Error
-    val isPersistedFailure = prefs.isRefreshFailed && !isError
-
-    val status =
-        when {
-            prefs.isRefreshing -> UpdateStatus.Refreshing
-            isError || isPersistedFailure -> UpdateStatus.Error
-            !prefs.isStale && !isError && !isPersistedFailure && prefs.lastFetched > 0L -> UpdateStatus.UpToDate
-            else -> UpdateStatus.Stale
-        }
-
-    val shape = Tokens.CardShape
-    Row(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp)
-                .background(color = surface, shape = shape)
-                .clip(shape)
-                .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier = Modifier.size(24.dp),
-            contentAlignment = Alignment.Center,
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
+            contentPadding =
+                PaddingValues(
+                    top = innerPadding.calculateTopPadding() + 8.dp,
+                    bottom = contentPadding.calculateBottomPadding() + 16.dp,
+                ),
         ) {
-            when (status) {
-                UpdateStatus.Refreshing -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        strokeWidth = 2.dp,
-                    )
-                }
-
-                UpdateStatus.Error -> {
-                    Icon(
-                        imageVector = Icons.Outlined.ErrorOutline,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
-                    )
-                }
-
-                UpdateStatus.UpToDate -> {
-                    Icon(
-                        imageVector = Icons.Rounded.CloudDone,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                }
-
-                UpdateStatus.Stale -> {
-                    Icon(
-                        imageVector = Icons.Rounded.SystemUpdate,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.tertiary,
-                    )
-                }
-            }
-        }
-        Spacer(Modifier.width(16.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text =
-                    when (status) {
-                        UpdateStatus.Refreshing -> stringResource(R.string.hero_checking_title)
-                        UpdateStatus.Error -> stringResource(R.string.hero_error_title)
-                        UpdateStatus.UpToDate -> stringResource(R.string.hero_operational_title)
-                        UpdateStatus.Stale -> stringResource(R.string.hero_stale_title)
-                    },
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            val lastChecked = if (prefs.lastFetched > 0L) lastCheckedLine(prefs.lastFetched) else null
-            Text(
-                text =
-                    when (status) {
-                        UpdateStatus.Refreshing -> {
-                            stringResource(R.string.hero_checking_subtitle)
-                        }
-
-                        UpdateStatus.Error -> {
-                            if (isError) {
-                                (outcomeEvent as SelectorSyncEvent.Error).resolveMessage(context::getString)
-                            } else {
-                                stringResource(R.string.hero_error_subtitle)
-                            }
-                        }
-
-                        UpdateStatus.UpToDate -> {
-                            val delta =
-                                (outcomeEvent as? SelectorSyncEvent.Updated)?.let { ev ->
-                                    when {
-                                        ev.added > 0 && ev.removed > 0 -> {
-                                            stringResource(R.string.hero_delta_changed, ev.added, ev.removed)
-                                        }
-
-                                        ev.added > 0 -> {
-                                            stringResource(R.string.hero_delta_added, ev.added)
-                                        }
-
-                                        ev.removed > 0 -> {
-                                            stringResource(R.string.hero_delta_removed, ev.removed)
-                                        }
-
-                                        else -> {
-                                            null
-                                        }
-                                    }
-                                }
-                            listOfNotNull(
-                                stringResource(R.string.hero_operational_subtitle),
-                                lastChecked,
-                                delta,
-                            ).joinToString("\n")
-                        }
-
-                        UpdateStatus.Stale -> {
-                            listOfNotNull(
-                                stringResource(R.string.hero_stale_subtitle),
-                                lastChecked,
-                            ).joinToString("\n")
-                        }
-                    },
-                style = MaterialTheme.typography.bodyMedium,
-                color =
-                    if (status == UpdateStatus.Error) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-            )
-        }
-        IconButton(
-            onClick = onRefresh,
-            enabled = !prefs.isRefreshing,
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Refresh,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-@Composable
-private fun SystemEnvironmentCard(
-    prefs: AppPrefsState,
-    surface: Color,
-    modifier: Modifier = Modifier,
-) {
-    val shape = Tokens.CardShape
-    Column(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp)
-                .background(color = surface, shape = shape)
-                .clip(shape)
-                .padding(16.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Outlined.Extension,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint =
-                    if (prefs.isXposedActive) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.error
-                    },
-            )
-            Spacer(Modifier.width(16.dp))
-            Column {
-                Text(
-                    text = stringResource(R.string.env_xposed),
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-                Text(
-                    text =
-                        if (prefs.isXposedActive) {
-                            stringResource(R.string.env_xposed_active, prefs.frameworkVersion ?: "Unknown")
-                        } else {
-                            stringResource(R.string.env_xposed_inactive)
-                        },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color =
-                        if (prefs.isXposedActive) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.error
-                        },
+            item {
+                UpdatesCard(
+                    isRefreshing = state.isRefreshing,
+                    isRefreshFailed = state.isRefreshFailed,
+                    isStale = state.isStale,
+                    lastFetched = state.lastFetched,
+                    lastRefreshOutcome = state.lastRefreshOutcome,
+                    onRefresh = { viewModel.refreshAll() },
                 )
             }
-        }
-        HorizontalDivider(
-            modifier = Modifier.padding(vertical = 12.dp),
-            color = MaterialTheme.colorScheme.outlineVariant,
-        )
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Outlined.PhoneAndroid,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.width(16.dp))
-            Column {
-                Text(
-                    text = Build.MODEL,
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-                Text(
-                    text = "${Build.MANUFACTURER} · ${Build.DEVICE}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+
+            item { Spacer(Modifier.height(16.dp)) }
+
+            item {
+                TargetAppsCard(
+                    amazonPackage = amazonPackage,
+                    amazonInfo = amazonInfo,
+                    webViewInfo = webViewInfo,
+                    surface = surface,
                 )
             }
-        }
-        HorizontalDivider(
-            modifier = Modifier.padding(vertical = 12.dp),
-            color = MaterialTheme.colorScheme.outlineVariant,
-        )
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Outlined.Android,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.width(16.dp))
-            Column {
-                Text(
-                    text = "Android ${Build.VERSION.RELEASE}",
-                    style = MaterialTheme.typography.bodyLarge,
+
+            item { Spacer(Modifier.height(16.dp)) }
+
+            item {
+                MetricsGrid(
+                    injectionEnabled = state.injectionEnabled,
+                    selectorCount = state.selectorCount,
+                    surface = surface,
                 )
-                Text(
-                    text = "API ${Build.VERSION.SDK_INT}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+            }
+
+            item { Spacer(Modifier.height(16.dp)) }
+
+            item {
+                SystemEnvironmentCard(
+                    isXposedActive = state.isXposedActive,
+                    frameworkVersion = state.frameworkVersion,
+                    surface = surface,
                 )
             }
         }
     }
 }
-
-@Composable
-private fun MetricsGrid(
-    prefs: AppPrefsState,
-    surface: Color,
-    onShowRules: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val shape = Tokens.CardShape
-    val adBlockingActive = prefs.injectionEnabled
-    Row(
-        modifier = modifier.fillMaxWidth().padding(horizontal = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .weight(1f)
-                    .background(color = surface, shape = shape)
-                    .clip(shape)
-                    .padding(16.dp),
-        ) {
-            Icon(
-                imageVector = if (adBlockingActive) Icons.Outlined.CheckCircle else Icons.Outlined.Cancel,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint = if (adBlockingActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-            )
-            Spacer(Modifier.height(12.dp))
-            Text(
-                text = stringResource(R.string.dashboard_method),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                text =
-                    if (adBlockingActive) {
-                        stringResource(R.string.dashboard_webview_injection)
-                    } else {
-                        stringResource(R.string.dashboard_injection_paused)
-                    },
-                style = MaterialTheme.typography.bodyLarge,
-            )
-        }
-
-        Column(
-            modifier =
-                Modifier
-                    .weight(1f)
-                    .background(color = surface, shape = shape)
-                    .clip(shape)
-                    .then(if (adBlockingActive) Modifier.clickable(onClick = onShowRules) else Modifier)
-                    .padding(16.dp)
-                    .then(if (adBlockingActive) Modifier else Modifier.alpha(0.38f)),
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.Rule,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                if (adBlockingActive) {
-                    Spacer(Modifier.weight(1f))
-                    Icon(
-                        imageVector = Icons.Rounded.ChevronRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            Spacer(Modifier.height(12.dp))
-            Text(
-                text =
-                    stringResource(
-                        R.string.config_active_selectors,
-                    ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                text =
-                    if (adBlockingActive) {
-                        stringResource(R.string.dashboard_rules_count, prefs.selectorCount)
-                    } else {
-                        stringResource(R.string.dashboard_no_active_rules)
-                    },
-                style = MaterialTheme.typography.bodyLarge,
-            )
-        }
-    }
-}
-
-private val GRAYSCALE =
-    ColorFilter.colorMatrix(
-        ColorMatrix().apply { setToSaturation(0f) },
-    )
-
-@Composable
-private fun TargetRow(
-    info: Triple<ImageBitmap, String, String?>?,
-    isGrayscale: Boolean = false,
-    trailing: @Composable () -> Unit = {},
-) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        if (info != null) {
-            Image(
-                bitmap = info.first,
-                contentDescription = null,
-                colorFilter = if (isGrayscale) GRAYSCALE else null,
-                modifier = Modifier.size(32.dp).clip(RoundedCornerShape(6.dp)),
-            )
-        } else {
-            Icon(
-                imageVector = Icons.Outlined.ShoppingCart,
-                contentDescription = null,
-                modifier = Modifier.size(32.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Spacer(Modifier.width(16.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = info?.second ?: stringResource(R.string.target_title),
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            Text(
-                text =
-                    if (info != null) {
-                        "v${info.third}"
-                    } else {
-                        stringResource(R.string.dashboard_not_installed)
-                    },
-                style = MaterialTheme.typography.bodyMedium,
-                color =
-                    if (info == null) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-            )
-        }
-        trailing()
-    }
-}
-
-private fun formatUpdateEventMessage(
-    context: android.content.Context,
-    event: SelectorSyncEvent,
-): String =
-    when (event) {
-        is SelectorSyncEvent.Updated -> {
-            val total = event.added + event.removed
-            context.getString(R.string.snackbar_updated, total)
-        }
-
-        is SelectorSyncEvent.UpToDate -> {
-            context.getString(R.string.snackbar_up_to_date)
-        }
-
-        is SelectorSyncEvent.Error -> {
-            event.resolveMessage { context.getString(it) }
-        }
-    }
 
 @Suppress("ViewModelConstructorInComposable")
 @PreviewLightDark
@@ -739,29 +220,22 @@ private fun DashboardScreenPreview() {
 }
 
 private class PreviewAppViewModel : AppViewModel() {
-    private val _uiState =
+    override val dashboardUiState: StateFlow<DashboardUiState> =
         MutableStateFlow(
-            AppUiState.Success(
-                prefs =
-                    AppPrefsState(
-                        isXposedActive = true,
-                        frameworkVersion = "LSPosed v1.11.0",
-                        isRefreshing = false,
-                        isRefreshFailed = false,
-                        isStale = false,
-                        selectorCount = 42,
-                        lastFetched = System.currentTimeMillis() - 3_600_000,
-                        cachedSelectors =
-                            listOf(
-                                ".s-sponsored-label",
-                                ".a-section.a-spacing-none",
-                                "[data-component-type=\"sp\"]",
-                            ),
-                        injectionEnabled = true,
-                    ),
+            Ready(
+                isXposedActive = true,
+                frameworkVersion = "LSPosed v1.11.0",
+                isRefreshing = false,
+                isRefreshFailed = false,
+                isStale = false,
+                selectorCount = 42,
+                lastFetched = System.currentTimeMillis() - 3_600_000,
+                injectionEnabled = true,
+                lastRefreshOutcome = null,
             ),
-        )
-    override val uiState: StateFlow<AppUiState> = _uiState.asStateFlow()
+        ).asStateFlow()
+
+    override val settingsUiState: StateFlow<SettingsUiState> = MutableStateFlow(SettingsUiState.Ready()).asStateFlow()
 
     override fun refreshAll() {}
 

@@ -2,11 +2,13 @@ package eu.hxreborn.amznkiller.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import eu.hxreborn.amznkiller.prefs.PrefSpec
-import eu.hxreborn.amznkiller.ui.state.AppUiState
+import eu.hxreborn.amznkiller.ui.state.DashboardUiState
+import eu.hxreborn.amznkiller.ui.state.SettingsUiState
 import kotlinx.coroutines.flow.StateFlow
 
 abstract class AppViewModel : ViewModel() {
-    abstract val uiState: StateFlow<AppUiState>
+    abstract val dashboardUiState: StateFlow<DashboardUiState>
+    abstract val settingsUiState: StateFlow<SettingsUiState>
 
     abstract fun refreshAll()
 
