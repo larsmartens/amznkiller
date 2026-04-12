@@ -55,6 +55,9 @@ jobs:
                 .github/workflows/*)
                   git restore --source="${{ steps.base.outputs.sha }}" --staged --worktree -- "$path" 2>/dev/null || git rm -f -- "$path"
                   ;;
+                gradle.properties)
+                  git checkout --theirs -- "$path" 2>/dev/null || git rm -f -- "$path"
+                  ;;
                 *)
                   git checkout --ours -- "$path" 2>/dev/null || git rm -f -- "$path"
                   ;;
@@ -87,26 +90,41 @@ jobs:
             git commit -m "chore: preserve fork workflows after upstream sync"
           fi
 
+      - name: Bump fork release metadata
+        if: steps.check.outputs.behind != '0'
+        id: version
+        run: |
+          source .github/release.sh --source-only
+          RAW_VERSION=$(sed -ne 's/^version.name=//p' gradle.properties)
+          BASE_VERSION=${RAW_VERSION%%-fork.*}
+          BUILD_COUNT=$(git rev-list --count HEAD)
+          VERSION_NAME="${BASE_VERSION}-fork.${BUILD_COUNT}"
+          VERSION_CODE=$(compute_version_code "$BASE_VERSION")
+          TAG_NAME="v${VERSION_NAME}"
+          if grep -q '^version\\.code=' gradle.properties; then
+            sed -i "s/^version\\.code=.*/version.code=${VERSION_CODE}/" gradle.properties
+          else
+            printf '\nversion.code=%s\n' "${VERSION_CODE}" >> gradle.properties
+          fi
+          if grep -q '^version\\.name=' gradle.properties; then
+            sed -i "s/^version\\.name=.*/version.name=${VERSION_NAME}/" gradle.properties
+          else
+            printf 'version.name=%s\n' "${VERSION_NAME}" >> gradle.properties
+          fi
+          git add gradle.properties
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: prepare fork release metadata"
+          fi
+          echo "version_name=${VERSION_NAME}" >> "$GITHUB_OUTPUT"
+          echo "version_code=${VERSION_CODE}" >> "$GITHUB_OUTPUT"
+          echo "tag_name=${TAG_NAME}" >> "$GITHUB_OUTPUT"
+
       - name: Push synced branch
         if: steps.check.outputs.behind != '0'
         run: git push origin main
 
-      - uses: actions/setup-java@v4
+      - name: Create and push release tag
         if: steps.check.outputs.behind != '0'
-        with:
-          distribution: temurin
-          java-version: 21
-          cache: gradle
-
-      - name: Build APKs
-        if: steps.check.outputs.behind != '0'
-        run: ./gradlew assembleDebug assembleRelease
-
-      - name: Upload build artifacts
-        if: steps.check.outputs.behind != '0'
-        uses: actions/upload-artifact@v4
-        with:
-          name: amznkiller-sync-build
-          path: |
-            app/build/outputs/apk/debug/*.apk
-            app/build/outputs/apk/release/*.apk
+        run: |
+          git tag -a "${{ steps.version.outputs.tag_name }}" -m "${{ steps.version.outputs.tag_name }}"
+          git push origin "${{ steps.version.outputs.tag_name }}"
