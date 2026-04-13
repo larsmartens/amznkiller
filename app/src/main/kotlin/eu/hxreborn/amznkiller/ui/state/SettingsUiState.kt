@@ -16,6 +16,9 @@ sealed interface SettingsUiState {
         val webviewDebugging: Boolean = Prefs.WEBVIEW_DEBUGGING.default,
         val forceDarkWebview: Boolean = Prefs.FORCE_DARK_WEBVIEW.default,
         val priceChartsEnabled: Boolean = Prefs.PRICE_CHARTS_ENABLED.default,
+        val chartDefaultRange: String = Prefs.CHART_DEFAULT_RANGE.default,
+        val chartInteractiveEnabled: Boolean = Prefs.CHART_INTERACTIVE_ENABLED.default,
+        val chartMode: String = Prefs.CHART_MODE.default,
         val darkThemeConfig: DarkThemeConfig = DarkThemeConfig.FOLLOW_SYSTEM,
         val useDynamicColor: Boolean = Prefs.USE_DYNAMIC_COLOR.default,
     ) : SettingsUiState

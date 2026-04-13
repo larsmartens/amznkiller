@@ -71,6 +71,9 @@ class AppViewModelImpl(
                     webviewDebugging = prefs.webviewDebugging,
                     forceDarkWebview = prefs.forceDarkWebview,
                     priceChartsEnabled = prefs.priceChartsEnabled,
+                    chartDefaultRange = prefs.chartDefaultRange,
+                    chartInteractiveEnabled = prefs.chartInteractiveEnabled,
+                    chartMode = prefs.chartMode,
                     darkThemeConfig = prefs.darkThemeConfig,
                     useDynamicColor = prefs.useDynamicColor,
                 )
