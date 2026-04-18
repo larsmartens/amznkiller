@@ -130,6 +130,10 @@ class AppViewModelImpl(
         }
     }
 
+    override fun syncPrefsToRemote() {
+        repository.syncLocalToRemote()
+    }
+
     private fun emitFailure(
         messageResId: Int,
         fallback: String? = null,

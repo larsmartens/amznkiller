@@ -24,14 +24,15 @@ class MainActivity :
     ComponentActivity(),
     XposedServiceHelper.OnServiceListener {
     private var remotePrefs: SharedPreferences? = null
+    private val prefsRepository by lazy {
+        PrefsRepositoryImpl(
+            localPrefs = getSharedPreferences(Prefs.GROUP, MODE_PRIVATE),
+            remotePrefsProvider = { remotePrefs },
+        )
+    }
 
     private val viewModel: AppViewModel by viewModels {
-        AppViewModelFactory(
-            PrefsRepositoryImpl(
-                localPrefs = getSharedPreferences(Prefs.GROUP, MODE_PRIVATE),
-                remotePrefsProvider = { remotePrefs },
-            ),
-        )
+        AppViewModelFactory(prefsRepository)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,6 +65,7 @@ class MainActivity :
 
     override fun onServiceBind(service: XposedService) {
         remotePrefs = service.getRemotePreferences(Prefs.GROUP)
+        viewModel.syncPrefsToRemote()
         viewModel.setXposedActive(
             active = true,
             frameworkVersion = "${service.frameworkName} v${service.frameworkVersion}",
