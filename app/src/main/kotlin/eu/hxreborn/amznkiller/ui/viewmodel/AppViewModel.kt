@@ -11,6 +11,7 @@ abstract class AppViewModel : ViewModel() {
     abstract val settingsUiState: StateFlow<SettingsUiState>
 
     abstract fun refreshAll()
+
     abstract fun syncPrefsToRemote()
 
     abstract fun setXposedActive(
