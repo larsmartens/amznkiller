@@ -21,5 +21,6 @@ sealed interface SettingsUiState {
         val chartMode: String = Prefs.CHART_MODE.default,
         val darkThemeConfig: DarkThemeConfig = DarkThemeConfig.FOLLOW_SYSTEM,
         val useDynamicColor: Boolean = Prefs.USE_DYNAMIC_COLOR.default,
+        val isLauncherIconHidden: Boolean = false,
     ) : SettingsUiState
 }

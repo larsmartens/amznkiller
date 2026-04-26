@@ -121,12 +121,7 @@ internal fun TargetRow(
                         stringResource(R.string.dashboard_not_installed)
                     },
                 style = MaterialTheme.typography.bodyMedium,
-                color =
-                    if (info == null) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
+                color = if (info == null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         trailing()

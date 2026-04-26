@@ -143,12 +143,7 @@ internal fun SelectorUrlDialog(
                         Text(
                             text = result,
                             style = MaterialTheme.typography.bodySmall,
-                            color =
-                                if (result.startsWith("Failed")) {
-                                    MaterialTheme.colorScheme.error
-                                } else {
-                                    MaterialTheme.colorScheme.primary
-                                },
+                            color = if (result.startsWith("Failed")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                         )
                     }
                 }

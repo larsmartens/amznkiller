@@ -7,12 +7,12 @@ plugins {
 
 android {
     namespace = "eu.hxreborn.amznkiller"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "eu.hxreborn.amznkiller"
         minSdk = 29
-        targetSdk = 36
+        targetSdk = 37
 
         versionName = project.property("version.name").toString()
         versionCode = project.property("version.code").toString().toInt()
@@ -98,7 +98,7 @@ kotlin {
 val ktlint: Configuration by configurations.creating
 
 dependencies {
-    ktlint("com.pinterest.ktlint:ktlint-cli:1.8.0")
+    ktlint(libs.ktlint.cli)
 
     compileOnly(libs.libxposed.api)
     implementation(libs.libxposed.service)

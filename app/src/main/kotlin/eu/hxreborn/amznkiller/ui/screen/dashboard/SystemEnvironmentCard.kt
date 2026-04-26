@@ -51,12 +51,7 @@ internal fun SystemEnvironmentCard(
                 imageVector = Icons.Outlined.Extension,
                 contentDescription = null,
                 modifier = Modifier.size(24.dp),
-                tint =
-                    if (isXposedActive) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.error
-                    },
+                tint = if (isXposedActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
             )
             Spacer(Modifier.width(16.dp))
             Column {
@@ -72,12 +67,7 @@ internal fun SystemEnvironmentCard(
                             stringResource(R.string.env_xposed_inactive)
                         },
                     style = MaterialTheme.typography.bodyMedium,
-                    color =
-                        if (isXposedActive) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.error
-                        },
+                    color = if (isXposedActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                 )
             }
         }

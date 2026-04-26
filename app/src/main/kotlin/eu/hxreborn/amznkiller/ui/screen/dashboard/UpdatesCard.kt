@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import eu.hxreborn.amznkiller.R
@@ -48,7 +49,7 @@ internal fun formatUpdateEventMessage(
     when (event) {
         is SelectorSyncEvent.Updated -> {
             val total = event.added + event.removed
-            context.getString(R.string.snackbar_updated, total)
+            context.resources.getQuantityString(R.plurals.snackbar_updated, total, total)
         }
 
         is SelectorSyncEvent.UpToDate -> {
@@ -79,7 +80,7 @@ internal fun UpdatesCard(
         when {
             isRefreshing -> UpdateStatus.Refreshing
             isError || isPersistedFailure -> UpdateStatus.Error
-            !isStale && !isError && !isPersistedFailure && lastFetched > 0L -> UpdateStatus.UpToDate
+            !isStale && lastFetched > 0L -> UpdateStatus.UpToDate
             else -> UpdateStatus.Stale
         }
 
@@ -169,11 +170,11 @@ internal fun UpdatesCard(
                                         }
 
                                         ev.added > 0 -> {
-                                            stringResource(R.string.hero_delta_added, ev.added)
+                                            pluralStringResource(R.plurals.hero_delta_added, ev.added, ev.added)
                                         }
 
                                         ev.removed > 0 -> {
-                                            stringResource(R.string.hero_delta_removed, ev.removed)
+                                            pluralStringResource(R.plurals.hero_delta_removed, ev.removed, ev.removed)
                                         }
 
                                         else -> {
@@ -196,12 +197,7 @@ internal fun UpdatesCard(
                         }
                     },
                 style = MaterialTheme.typography.bodyMedium,
-                color =
-                    if (status == UpdateStatus.Error) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
+                color = if (status == UpdateStatus.Error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         IconButton(

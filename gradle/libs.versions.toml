@@ -1,18 +1,19 @@
 [versions]
-agp = "9.1.0"
-kotlin = "2.3.20"
-versions = "0.53.0"
+agp = "9.2.0"
+kotlin = "2.3.21"
+versions = "0.54.0"
 xposed = "101.0.0"
 lifecycle = "2.10.0"
 core-ktx = "1.18.0"
-compose-bom = "2026.03.01"
+compose-bom = "2026.04.01"
 activity-compose = "1.13.0"
 splashscreen = "1.2.0"
-material3 = "1.5.0-alpha16"
-navigation3 = "1.1.0-rc01"
+material3 = "1.5.0-alpha18"
+navigation3 = "1.1.1"
 composePreferences = "2.2.0"
 materialMotionComposeCore = "2.0.1"
-aboutlibraries = "13.2.1"
+aboutlibraries = "14.0.1"
+ktlint-cli = "1.8.0"
 
 [libraries]
 libxposed-api = { group = "io.github.libxposed", name = "api", version.ref = "xposed" }
@@ -35,6 +36,7 @@ compose-preferences = { group = "me.zhanghai.compose.preference", name = "prefer
 material-motion-compose-core = { group = "io.github.fornewid", name = "material-motion-compose-core", version.ref = "materialMotionComposeCore" }
 aboutlibraries-core = { group = "com.mikepenz", name = "aboutlibraries-core", version.ref = "aboutlibraries" }
 aboutlibraries-compose = { group = "com.mikepenz", name = "aboutlibraries-compose-m3", version.ref = "aboutlibraries" }
+ktlint-cli = { group = "com.pinterest.ktlint", name = "ktlint-cli", version.ref = "ktlint-cli" }
 
 [plugins]
 agp-app = { id = "com.android.application", version.ref = "agp" }

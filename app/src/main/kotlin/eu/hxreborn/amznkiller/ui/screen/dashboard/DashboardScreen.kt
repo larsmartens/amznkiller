@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -70,9 +71,10 @@ fun DashboardScreen(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val context = LocalContext.current
     var lastHandledOutcomeId by remember { mutableStateOf<Long?>(null) }
+    val resources = LocalResources.current
     val tagline =
         rememberSaveable {
-            context.resources.getStringArray(R.array.taglines).random()
+            resources.getStringArray(R.array.taglines).random()
         }
 
     val (amazonPackage, amazonInfo) =
@@ -122,12 +124,7 @@ fun DashboardScreen(
                                 } else {
                                     LocalTextStyle.current
                                 },
-                            maxLines =
-                                if (isExpandedSlot) {
-                                    Tokens.ExpandedTitleMaxLines
-                                } else {
-                                    1
-                                },
+                            maxLines = if (isExpandedSlot) Tokens.EXPANDED_TITLE_MAX_LINES else 1,
                         )
                         Text(
                             text = tagline,
@@ -250,4 +247,6 @@ private class PreviewAppViewModel : AppViewModel() {
         value: T,
     ) {
     }
+
+    override fun setLauncherIconHidden(hidden: Boolean) {}
 }

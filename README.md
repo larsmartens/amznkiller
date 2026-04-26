@@ -43,150 +43,63 @@ Xposed module built on the modern LSPosed API that hides ads and sponsored conte
 
 ## Features
 
-- Remove sponsored cards, video carousels, and other promotional UI in the Amazon app
-- Maintained built-in selector list with remote updates. Optionally use your own self-hosted selector list via custom URL.
-- Selector sanitization blocks common CSS injection patterns
+- Strips sponsored cards, video carousels, and ad slots from the Amazon app
+- Bundled selector list with remote sync, custom URL, and CSS-injection sanitization
 - Price history charts on product pages via Keepa and CamelCamelCamel (US, UK, DE, FR, JP, CA, IT, ES, IN, MX, BR, AU)
-- [Force Dark](#how-does-force-dark-work) (experimental) uses the native force dark algorithm with supplementary CSS fixes to darken Amazon pages
-- Recommended alongside Private DNS and hosts-based blocking
-- Material 3 Expressive settings UI with Jetpack Compose
+- Optional Force Dark for the Amazon UI (experimental, see [below](#force-dark))
+- Material 3 Expressive settings UI in Jetpack Compose
 - Free and open source (FOSS)
-
-## Known Issues
-
-- [Force Dark](#how-does-force-dark-work) is experimental and disabled by default. Requires Android 15 (API 35) or higher for full support. On Android 10-14 force dark may not apply correctly. Some Amazon screens may still have contrast issues even on supported versions
-- Price history charts are still being expanded and may not appear on some product pages yet. 
 
 ## Requirements
 
 - Android 10 (API 29) or higher
-- An LSPosed Manager version with API 101 support (required for now)
-- Amazon Shopping app (`com.amazon.mShop.android.shopping`)
+- LSPosed Manager with libxposed API 101 support
+- Amazon Shopping (`com.amazon.mShop.android.shopping`)
 
-## Installation
+## Install
 
-1. Download the APK:
+1. Grab the APK:
 
     <a href="../../releases"><img src="https://github.com/user-attachments/assets/d18f850c-e4d2-4e00-8b03-3b0e87e90954" height="60" alt="Get it on GitHub" /></a>
     <a href="http://apps.obtainium.imranr.dev/redirect.html?r=obtainium://app/%7B%22id%22%3A%22eu.hxreborn.amznkiller%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2Flarsmartens%2Famznkiller%22%2C%22author%22%3A%22larsmartens%22%2C%22name%22%3A%22AmznKiller%22%2C%22additionalSettings%22%3A%22%7B%5C%22includePrereleases%5C%22%3Afalse%7D%22%7D"><img src="https://github.com/user-attachments/assets/dffe8fb9-c0d1-470b-8d69-6d5b38a8aa2d" height="60" alt="Get it on Obtainium" /></a>
 
-2. Enable the module in LSPosed and scope it to `com.amazon.mShop.android.shopping`
-3. Open the AmznKiller companion app to verify the module is active and optionally fetch updated
-   lists (built-in filters work out of the box)
-4. Force-stop the Amazon app and relaunch it. A toast confirms the module is active.
+2. Enable the module in LSPosed and scope it to `com.amazon.mShop.android.shopping`.
+3. Open the AmznKiller app to confirm the module is active and refresh selectors.
+4. Force-stop Amazon Shopping and relaunch.
 
 ## Screenshots
 
 Search query: _"macbook air m1 16gb 512"_
 
-<table>
-<tr><th>Stock (2 real results, rest are ads)</th><th>Patched</th></tr>
-<tr>
-  <td><img src="https://github.com/user-attachments/assets/4c2fb092-0e63-4a34-b9ba-afe1a4028b09" width="280" alt="Stock Amazon app" /></td>
-  <td><img src="https://github.com/user-attachments/assets/135e1fec-b0e9-4dc1-9d58-49fabd825262" width="280" alt="Patched Amazon app" /></td>
-</tr>
-</table>
+| Stock (2 real results, rest are ads) | Patched |
+| --- | --- |
+| <img src="https://github.com/user-attachments/assets/4c2fb092-0e63-4a34-b9ba-afe1a4028b09" width="280" alt="Stock Amazon app" /> | <img src="https://github.com/user-attachments/assets/135e1fec-b0e9-4dc1-9d58-49fabd825262" width="280" alt="Patched Amazon app" /> |
 
-<table>
-<tr><th>Force Dark</th><th>Price History</th></tr>
-<tr>
-  <td><img src="https://github.com/user-attachments/assets/f24a9ac7-126e-4eff-b5e7-d3b8cc652158" width="280" alt="Force Dark mode" /></td>
-  <td><img src="https://github.com/user-attachments/assets/fbebb479-8bdc-4395-b531-318ac07a68c9" width="280" alt="Price history charts" /></td>
-</tr>
-</table>
+| Force Dark | Price History |
+| --- | --- |
+| <img src="https://github.com/user-attachments/assets/f24a9ac7-126e-4eff-b5e7-d3b8cc652158" width="280" alt="Force Dark mode" /> | <img src="https://github.com/user-attachments/assets/fbebb479-8bdc-4395-b531-318ac07a68c9" width="280" alt="Price history charts" /> |
 
-**Settings app**
+| Dashboard | Selectors | Settings | Settings (bottom) |
+| --- | --- | --- | --- |
+| <img src="https://github.com/user-attachments/assets/d875c580-d81c-4be7-a857-98bc13656432" width="180" /> | <img src="https://github.com/user-attachments/assets/88a5aeee-8184-41c6-bf0a-e4d1fb3c1b13" width="180" /> | <img src="https://github.com/user-attachments/assets/cb69012d-94a0-4ca9-b6d7-9cd97cd5c580" width="180" /> | <img src="https://github.com/user-attachments/assets/a374ccec-9dce-4538-bdad-e89c15e24307" width="180" /> |
 
-<table>
-<tr>
-  <td><img src="https://github.com/user-attachments/assets/d875c580-d81c-4be7-a857-98bc13656432" width="280" alt="Dashboard" /></td>
-  <td><img src="https://github.com/user-attachments/assets/88a5aeee-8184-41c6-bf0a-e4d1fb3c1b13" width="280" alt="Selectors" /></td>
-</tr>
-<tr>
-  <td><img src="https://github.com/user-attachments/assets/cb69012d-94a0-4ca9-b6d7-9cd97cd5c580" width="280" alt="Settings" /></td>
-  <td><img src="https://github.com/user-attachments/assets/a374ccec-9dce-4538-bdad-e89c15e24307" width="280" alt="Settings (bottom)" /></td>
-</tr>
-</table>
+## Force Dark
 
-## FAQ
+Amazon disables Android force dark via `forceDarkAllowed=false` in its theme. The module hooks `ViewRootImpl.determineForceDarkType` and forces the return to `FORCE_DARK_ALWAYS`, triggering GPU-level darkening across native views and WebViews. Extra hooks paint window backgrounds dark and block white-flash on WebView load. `DarkModeInjector` ships CSS overrides for elements the algorithm gets wrong.
 
-<details>
-<summary>Nothing changes in Amazon</summary>
+`determineForceDarkType` was introduced in Android 15 (API 35). On Android 10-14 the primary hook does not apply. A fallback on `HardwareRenderer.setForceDark` is attempted but Amazon's theme opt-out blocks darkening on those versions.
 
-See [Troubleshooting](#troubleshooting). Most common causes: module not scoped correctly,
-missing force stop on Amazon Shopping, or LSPosed not activated.
-
-</details>
-
-<details>
-<summary>Some products or sections are missing (blank lists, missing tiles)</summary>
-
-1. Disable CSS injection in AmznKiller settings to confirm selectors are the cause.
-2. Update selectors from the dashboard (tap refresh).
-3. If it persists, open an issue with: AmznKiller version, Amazon app version, WebView version,
-selector count.
-
- </details>
-
-<details>
-<summary>Sync says "remote failed" or "bundled only"</summary>
-
-Bundled selectors are still applied. Check connectivity, reset the selector URL in settings,
-and refresh again.
-
-</details>
-
-<details>
-<summary>Does this block network requests or just hide elements?</summary>
-
-Cosmetic only. It injects CSS to hide ad elements. Network requests still happen.
-Works alongside DNS-based blockers (AdGuard, NextDNS, Private DNS, hosts files).
-
-</details>
-
-<details>
-<summary>Does this work on Amazon Lite or other Amazon apps?</summary>
-
-No. The module is scoped to `com.amazon.mShop.android.shopping` only for now.
-
-</details>
-
-<details>
-<summary>Do I need to reboot after updating selectors?</summary>
-
-No. Updated selectors apply on the next page load inside Amazon Shopping. Force stop
-Amazon Shopping if changes don't appear immediately.
-
-</details>
-
-<details>
-<summary id="how-does-force-dark-work">How does Force Dark work?</summary>
-
-Amazon disables Android's force dark algorithm via its theme (`forceDarkAllowed=false`). The
-module hooks `ViewRootImpl.determineForceDarkType` and overrides the return to
-`FORCE_DARK_ALWAYS`, which triggers GPU-level algorithmic darkening on all content including
-WebViews. Additional hooks set dark window backgrounds, theme native nav elements, and prevent
-white flash on WebView load. `DarkModeInjector` ships CSS fixes for elements the algorithm gets
-wrong (product images, buy buttons, deal badges).
-
-**Limitation:** `ViewRootImpl.determineForceDarkType` was introduced in Android 15 (API 35).
-On Android 10-14, this method does not exist so the primary force dark override cannot apply.
-A fallback hook on `HardwareRenderer.setForceDark` is attempted but Amazon's theme-level
-opt-out still blocks darkening on those versions.
-
-If you spot a rendering issue, open an issue with a screenshot, page URL, and Android version.
-You can enable WebView debugging in settings and inspect via `chrome://inspect`.
-
-</details>
+Disabled by default. Enable in settings if on Android 15+.
 
 ## Troubleshooting
 
 1. Confirm the module is enabled in LSPosed and scoped to Amazon Shopping.
-2. Force stop Amazon Shopping, then reopen (or reboot).
-3. Open AmznKiller. Verify Xposed is active and selector count is above 0.
-4. Tap refresh on the dashboard. If it fails, reset the selector URL in settings and retry.
-5. If pages look broken, disable CSS injection temporarily, reopen Amazon Shopping, update
-   selectors, then re-enable.
+2. Force stop Amazon Shopping and reopen.
+3. Check the AmznKiller dashboard: Xposed must be active and selector count above 0.
+4. Tap refresh. If it fails, reset the selector URL in settings.
+5. If pages render broken, disable CSS injection, refresh selectors, then re-enable.
+
+This is cosmetic blocking only. Network requests still happen. Pair with DNS-based blockers (AdGuard, NextDNS, Pi-hole) for full coverage.
 
 ## Build
 
@@ -201,7 +114,7 @@ Requires JDK 21 and Android SDK. Configure `local.properties`:
 ```properties
 sdk.dir=/path/to/android/sdk
 
-# Optional: release signing for reproducible builds
+# Optional: release signing
 RELEASE_STORE_FILE=<path/to/keystore.jks>
 RELEASE_STORE_PASSWORD=<store_password>
 RELEASE_KEY_ALIAS=<key_alias>
@@ -218,5 +131,4 @@ For bugs or feature requests, [open an issue](https://github.com/larsmartens/amz
 
 <a href="LICENSE"><img src="https://github.com/user-attachments/assets/b211cf0d-e255-421c-9213-6b6258676013" height="90" alt="GPLv3"></a>
 
-This project is licensed under the GNU General Public License v3.0 – see the [LICENSE](LICENSE) file
-for details.
+GPL v3.0. See [LICENSE](LICENSE).
