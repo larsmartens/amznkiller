@@ -77,11 +77,11 @@ class AppViewModelImpl(
                     darkThemeConfig = prefs.darkThemeConfig,
                     useDynamicColor = prefs.useDynamicColor,
                 )
-            }.stateIn(
-                scope = viewModelScope,
-                started = WhileSubscribed(5.seconds.inWholeMilliseconds),
-                initialValue = SettingsLoading,
-            )
+        }.stateIn(
+            scope = viewModelScope,
+            started = WhileSubscribed(5.seconds.inWholeMilliseconds),
+            initialValue = SettingsLoading,
+        )
 
     override fun refreshAll() {
         if (refreshing.value) return
