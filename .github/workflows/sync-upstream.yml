@@ -128,3 +128,78 @@ jobs:
         run: |
           git tag -a "${{ steps.version.outputs.tag_name }}" -m "${{ steps.version.outputs.tag_name }}"
           git push origin "${{ steps.version.outputs.tag_name }}"
+
+      - name: Setup Java for release build
+        if: steps.check.outputs.behind != '0'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Decode keystore
+        if: steps.check.outputs.behind != '0'
+        run: echo "${{ secrets.RELEASE_KEYSTORE }}" | base64 -d > ${{ github.workspace }}/release.keystore
+
+      - name: Detect prerelease
+        if: steps.check.outputs.behind != '0'
+        id: prerelease
+        run: |
+          VERSION_NAME=${{ steps.version.outputs.version_name }}
+          if [[ "$VERSION_NAME" =~ (rc|alpha|beta) ]]; then
+            echo "value=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build release APKs
+        if: steps.check.outputs.behind != '0'
+        run: ./gradlew assembleDebug assembleRelease
+        env:
+          RELEASE_STORE_FILE: ${{ github.workspace }}/release.keystore
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+
+      - name: Upload sync artifacts
+        if: steps.check.outputs.behind != '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: amznkiller-${{ steps.version.outputs.version_name }}
+          path: |
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/apk/debug/*.apk
+
+      - name: Generate release notes
+        if: steps.check.outputs.behind != '0'
+        id: changelog
+        continue-on-error: true
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: .github/cliff.toml
+          args: --latest --strip header
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPO: ${{ github.repository }}
+
+      - name: Create GitHub release
+        if: steps.check.outputs.behind != '0'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag_name }}
+          prerelease: ${{ steps.prerelease.outputs.value }}
+          body: ${{ steps.changelog.outputs.content || '' }}
+          files: app/build/outputs/apk/release/*.apk
+
+      - name: Mirror release to Xposed-Modules-Repo
+        if: steps.check.outputs.behind != '0'
+        uses: softprops/action-gh-release@v2
+        with:
+          repository: Xposed-Modules-Repo/eu.hxreborn.amznkiller
+          token: ${{ secrets.XPOSED_REPO_PAT }}
+          tag_name: ${{ steps.version.outputs.tag_name }}
+          prerelease: ${{ steps.prerelease.outputs.value }}
+          body: ${{ steps.changelog.outputs.content || '' }}
+          files: app/build/outputs/apk/release/*.apk
+          fail_on_unmatched_files: true
+          make_latest: true

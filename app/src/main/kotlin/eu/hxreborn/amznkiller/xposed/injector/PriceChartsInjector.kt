@@ -1,13 +1,9 @@
 package eu.hxreborn.amznkiller.xposed.injector
 
-import android.app.Activity
-import android.content.Context
-import android.content.ContextWrapper
 import android.webkit.WebView
 import eu.hxreborn.amznkiller.prefs.PrefsSnapshot
 import eu.hxreborn.amznkiller.util.Logger
 import eu.hxreborn.amznkiller.xposed.bridge.ChartMode
-import eu.hxreborn.amznkiller.xposed.bridge.ChartOverlay
 import eu.hxreborn.amznkiller.xposed.bridge.KeepaDataScraper
 import eu.hxreborn.amznkiller.xposed.js.ScriptId
 import eu.hxreborn.amznkiller.xposed.js.ScriptRepository
@@ -138,32 +134,24 @@ object PriceChartsInjector {
         asin: String,
         keepaId: Int,
     ) {
-        val activity = webView.context.findActivity()
-        if (activity == null) {
-            Logger.logDebug("PriceChartsInjector: overlay no activity, falling back to static")
-            val domain =
-                webView.url
-                    ?.let {
-                        eu.hxreborn.amznkiller.xposed.runtime.AmazonUrlParser
-                            .parse(it)
-                            .domain
-                    } ?: "amazon.com"
-            val camelLocale = CAMEL_LOCALES[domain] ?: "us"
-            injectStatic(
-                webView,
-                prefs,
-                asin,
-                domain,
-                keepaId,
-                camelLocale,
-                forceInteractive = true,
-            )
-            return
-        }
-        Logger.logDebug("PriceChartsInjector: auto-opening overlay")
-        activity.runOnUiThread {
-            ChartOverlay.show(activity, asin, keepaId, prefs.forceDarkWebview)
-        }
+        Logger.logDebug("PriceChartsInjector: rendering overlay launch button")
+        val domain =
+            webView.url
+                ?.let {
+                    eu.hxreborn.amznkiller.xposed.runtime.AmazonUrlParser
+                        .parse(it)
+                        .domain
+                } ?: "amazon.com"
+        val camelLocale = CAMEL_LOCALES[domain] ?: "us"
+        injectStatic(
+            webView,
+            prefs,
+            asin,
+            domain,
+            keepaId,
+            camelLocale,
+            forceInteractive = true,
+        )
     }
 
     @Suppress("LongParameterList")
@@ -212,13 +200,4 @@ object PriceChartsInjector {
             }
         }
     }
-}
-
-private fun Context.findActivity(): Activity? {
-    var current: Context? = this
-    while (current is ContextWrapper) {
-        if (current is Activity) return current
-        current = current.baseContext
-    }
-    return null
 }
