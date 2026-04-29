@@ -535,7 +535,7 @@ fun SettingsScreen(
                     value = prefs.isLauncherIconHidden,
                     icon = {
                         Icon(
-                            imageVector = Icons.Outlined.PhonelinkErase,
+                            imageVector = Icons.Outlined.Block,
                             contentDescription = null,
                         )
                     },
