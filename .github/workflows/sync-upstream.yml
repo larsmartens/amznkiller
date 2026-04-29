@@ -95,22 +95,16 @@ jobs:
         id: version
         run: |
           source .github/release.sh --source-only
-          RAW_VERSION=$(sed -ne 's/^version.name=//p' gradle.properties | tr -d '\r')
+          RAW_VERSION=$(grep '^version\.name=' gradle.properties | head -n 1 | cut -d= -f2- | tr -d '\r')
           BASE_VERSION=${RAW_VERSION%%-fork.*}
           BUILD_COUNT=$(git rev-list --count HEAD)
           VERSION_NAME="${BASE_VERSION}-fork.${BUILD_COUNT}"
           VERSION_CODE=$(compute_version_code "$BASE_VERSION")
           TAG_NAME="v${VERSION_NAME}"
-          if grep -q '^version\\.code=' gradle.properties; then
-            sed -i "s/^version\\.code=.*/version.code=${VERSION_CODE}/" gradle.properties
-          else
-            printf '\nversion.code=%s\n' "${VERSION_CODE}" >> gradle.properties
-          fi
-          if grep -q '^version\\.name=' gradle.properties; then
-            sed -i "s/^version\\.name=.*/version.name=${VERSION_NAME}/" gradle.properties
-          else
-            printf 'version.name=%s\n' "${VERSION_NAME}" >> gradle.properties
-          fi
+          TMP_PROPS=$(mktemp)
+          grep -v '^version\.\(code\|name\)=' gradle.properties > "${TMP_PROPS}"
+          printf '\nversion.code=%s\nversion.name=%s\n' "${VERSION_CODE}" "${VERSION_NAME}" >> "${TMP_PROPS}"
+          mv "${TMP_PROPS}" gradle.properties
           git add gradle.properties
           if ! git diff --cached --quiet; then
             git commit -m "chore: prepare fork release metadata"
