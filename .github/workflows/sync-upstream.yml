@@ -15,6 +15,9 @@ concurrency:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    env:
+      HAS_RELEASE_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE != '' }}
+      HAS_XPOSED_REPO_PAT: ${{ secrets.XPOSED_REPO_PAT != '' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -132,8 +135,12 @@ jobs:
           cache: gradle
 
       - name: Decode keystore
-        if: steps.check.outputs.behind != '0'
+        if: steps.check.outputs.behind != '0' && env.HAS_RELEASE_KEYSTORE == 'true'
         run: echo "${{ secrets.RELEASE_KEYSTORE }}" | base64 -d > ${{ github.workspace }}/release.keystore
+
+      - name: Report skipped release signing
+        if: steps.check.outputs.behind != '0' && env.HAS_RELEASE_KEYSTORE != 'true'
+        run: echo "::warning::RELEASE_KEYSTORE is not configured; release APK will be unsigned."
 
       - name: Detect prerelease
         if: steps.check.outputs.behind != '0'
@@ -186,7 +193,7 @@ jobs:
           files: app/build/outputs/apk/release/*.apk
 
       - name: Mirror release to Xposed-Modules-Repo
-        if: steps.check.outputs.behind != '0'
+        if: steps.check.outputs.behind != '0' && env.HAS_XPOSED_REPO_PAT == 'true'
         uses: softprops/action-gh-release@v2
         with:
           repository: Xposed-Modules-Repo/eu.hxreborn.amznkiller
@@ -197,3 +204,7 @@ jobs:
           files: app/build/outputs/apk/release/*.apk
           fail_on_unmatched_files: true
           make_latest: true
+
+      - name: Report skipped Xposed mirror
+        if: steps.check.outputs.behind != '0' && env.HAS_XPOSED_REPO_PAT != 'true'
+        run: echo "::warning::XPOSED_REPO_PAT is not configured; fork release was created, but Xposed-Modules-Repo was not updated."

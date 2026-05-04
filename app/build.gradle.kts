@@ -29,8 +29,9 @@ android {
                 providers.gradleProperty(name).orElse(providers.environmentVariable(name)).orNull
 
             val storeFilePath = secret("RELEASE_STORE_FILE")
-            if (!storeFilePath.isNullOrBlank()) {
-                storeFile = file(storeFilePath)
+            val releaseStoreFile = storeFilePath?.takeIf { it.isNotBlank() }?.let { file(it) }
+            if (releaseStoreFile?.exists() == true) {
+                storeFile = releaseStoreFile
                 storePassword = secret("RELEASE_STORE_PASSWORD")
                 keyAlias = secret("RELEASE_KEY_ALIAS")
                 keyPassword = secret("RELEASE_KEY_PASSWORD")
