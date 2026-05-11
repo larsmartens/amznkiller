@@ -18,6 +18,7 @@ object Prefs {
     val INJECTION_ENABLED = BoolPref("injection_enabled", true)
     val WEBVIEW_DEBUGGING = BoolPref("webview_debugging", false)
     val FORCE_DARK_WEBVIEW = BoolPref("force_dark_webview", false)
+    val FORCE_DARK_MODE = StringPref("force_dark_mode", ForceDarkMode.OFF.prefValue)
     val PRICE_CHARTS_ENABLED = BoolPref("price_charts_enabled", false)
     val CHART_DEFAULT_RANGE = StringPref("chart_default_range", "all")
     val CHART_INTERACTIVE_ENABLED = BoolPref("chart_interactive_enabled", true)
@@ -39,6 +40,7 @@ object Prefs {
             INJECTION_ENABLED,
             WEBVIEW_DEBUGGING,
             FORCE_DARK_WEBVIEW,
+            FORCE_DARK_MODE,
             PRICE_CHARTS_ENABLED,
             CHART_DEFAULT_RANGE,
             CHART_INTERACTIVE_ENABLED,
@@ -49,4 +51,13 @@ object Prefs {
         )
 
     fun parseSelectors(raw: String): List<String> = raw.lines().filter { it.isNotBlank() }
+
+    fun readForceDarkMode(prefs: android.content.SharedPreferences): ForceDarkMode =
+        if (prefs.contains(FORCE_DARK_MODE.key)) {
+            ForceDarkMode.fromPrefValue(FORCE_DARK_MODE.read(prefs))
+        } else if (FORCE_DARK_WEBVIEW.read(prefs)) {
+            ForceDarkMode.ON
+        } else {
+            ForceDarkMode.OFF
+        }
 }
