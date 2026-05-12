@@ -24,6 +24,7 @@ object Prefs {
     val CHART_INTERACTIVE_ENABLED = BoolPref("chart_interactive_enabled", true)
     val CHART_MODE = StringPref("chart_mode", "static")
 
+    val HIDE_RUFUS = BoolPref("hide_rufus", false)
     val LAST_REFRESH_FAILED = BoolPref("last_refresh_failed", false)
     val AUTO_UPDATE = BoolPref("auto_update", true)
 
@@ -35,6 +36,7 @@ object Prefs {
             SELECTOR_URL,
             CACHED_SELECTORS,
             LAST_FETCHED,
+            HIDE_RUFUS,
             LAST_REFRESH_FAILED,
             DEBUG_LOGS,
             INJECTION_ENABLED,
