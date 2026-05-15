@@ -76,6 +76,7 @@ import eu.hxreborn.amznkiller.ui.state.DashboardUiState
 import eu.hxreborn.amznkiller.ui.state.SettingsUiState
 import eu.hxreborn.amznkiller.ui.state.SettingsUiState.Loading
 import eu.hxreborn.amznkiller.ui.state.SettingsUiState.Ready
+import eu.hxreborn.amznkiller.ui.theme.AmznKillerSurfaceDefaults
 import eu.hxreborn.amznkiller.ui.theme.DarkThemeConfig
 import eu.hxreborn.amznkiller.ui.theme.Tokens
 import eu.hxreborn.amznkiller.ui.util.shapeForPosition
@@ -193,15 +194,15 @@ fun SettingsScreen(
             )
         },
     ) { innerPadding ->
-        val surface = MaterialTheme.colorScheme.surfaceVariant
+        val surface = AmznKillerSurfaceDefaults.cardContainerColor
 
         ProvidePreferenceLocals {
             LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
+                modifier = Modifier.fillMaxSize().padding(horizontal = Tokens.ScreenHorizontalPadding),
                 contentPadding =
                     PaddingValues(
                         top = innerPadding.calculateTopPadding(),
-                        bottom = contentPadding.calculateBottomPadding() + 16.dp,
+                        bottom = contentPadding.calculateBottomPadding() + Tokens.SpacingLg,
                     ),
             ) {
                 preferenceCategory(
@@ -220,7 +221,7 @@ fun SettingsScreen(
                     onClick = { showThemeDialog = true },
                 )
 
-                item { Spacer(Modifier.height(2.dp)) }
+                item { Spacer(Modifier.height(Tokens.PreferenceItemGap)) }
 
                 val dynamicColorShape = shapeForPosition(appearanceItemCount, 1)
                 switchPreference(
@@ -250,7 +251,7 @@ fun SettingsScreen(
                     onValueChange = { viewModel.savePref(Prefs.INJECTION_ENABLED, it) },
                 )
 
-                item { Spacer(Modifier.height(2.dp)) }
+                item { Spacer(Modifier.height(Tokens.PreferenceItemGap)) }
 
                 val syncShape = shapeForPosition(adBlockItemCount, 1)
                 switchPreference(
@@ -263,7 +264,7 @@ fun SettingsScreen(
                     onValueChange = { viewModel.savePref(Prefs.AUTO_UPDATE, it) },
                 )
 
-                item { Spacer(Modifier.height(2.dp)) }
+                item { Spacer(Modifier.height(Tokens.PreferenceItemGap)) }
 
                 val filterSourcesShape = shapeForPosition(adBlockItemCount, 2)
                 preference(
@@ -292,7 +293,7 @@ fun SettingsScreen(
                     onValueChange = { viewModel.savePref(Prefs.PRICE_CHARTS_ENABLED, it) },
                 )
 
-                item { Spacer(Modifier.height(2.dp)) }
+                item { Spacer(Modifier.height(Tokens.PreferenceItemGap)) }
 
                 val chartModeShape = shapeForPosition(displayItemCount, 1)
                 preference(
@@ -326,7 +327,7 @@ fun SettingsScreen(
                     onClick = { showChartModeDialog = true },
                 )
 
-                item { Spacer(Modifier.height(2.dp)) }
+                item { Spacer(Modifier.height(Tokens.PreferenceItemGap)) }
 
                 val chartRangeShape = shapeForPosition(displayItemCount, 2)
                 preference(
@@ -456,7 +457,7 @@ fun SettingsScreen(
                     onValueChange = { viewModel.setLauncherIconHidden(it) },
                 )
 
-                item { Spacer(Modifier.height(2.dp)) }
+                item { Spacer(Modifier.height(Tokens.PreferenceItemGap)) }
 
                 val webviewDebugShape = shapeForPosition(advancedItemCount, 1)
                 switchPreference(
@@ -469,7 +470,7 @@ fun SettingsScreen(
                     onValueChange = { viewModel.savePref(Prefs.WEBVIEW_DEBUGGING, it) },
                 )
 
-                item { Spacer(Modifier.height(2.dp)) }
+                item { Spacer(Modifier.height(Tokens.PreferenceItemGap)) }
 
                 val debugShape = shapeForPosition(advancedItemCount, 2)
                 switchPreference(
@@ -497,7 +498,7 @@ fun SettingsScreen(
                     summary = { Text("v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})") },
                 )
 
-                item { Spacer(Modifier.height(2.dp)) }
+                item { Spacer(Modifier.height(Tokens.PreferenceItemGap)) }
 
                 val gitRepoShape = shapeForPosition(aboutItemCount, 1)
                 preference(
@@ -511,7 +512,7 @@ fun SettingsScreen(
                     },
                 )
 
-                item { Spacer(Modifier.height(2.dp)) }
+                item { Spacer(Modifier.height(Tokens.PreferenceItemGap)) }
 
                 val licensesShape = shapeForPosition(aboutItemCount, 2)
                 preference(
@@ -523,7 +524,7 @@ fun SettingsScreen(
                     onClick = onNavigateToLicenses,
                 )
 
-                item { Spacer(Modifier.height(2.dp)) }
+                item { Spacer(Modifier.height(Tokens.PreferenceItemGap)) }
 
                 val issueShape = shapeForPosition(aboutItemCount, 3)
                 preference(
@@ -692,6 +693,8 @@ private class PreviewSettingsViewModel : AppViewModel() {
         ).asStateFlow()
 
     override fun refreshAll() {}
+
+    override fun triggerAutoUpdateIfEnabled() {}
 
     override fun setXposedActive(
         active: Boolean,
