@@ -2,6 +2,7 @@ package eu.hxreborn.amznkiller.ui.screen.settings
 
 import android.app.ActivityManager
 import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -44,17 +45,24 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.SpanStyle
@@ -70,6 +78,7 @@ import eu.hxreborn.amznkiller.R
 import eu.hxreborn.amznkiller.prefs.ForceDarkMode
 import eu.hxreborn.amznkiller.prefs.PrefSpec
 import eu.hxreborn.amznkiller.prefs.Prefs
+import eu.hxreborn.amznkiller.ui.component.BalloonsOverlay
 import eu.hxreborn.amznkiller.ui.preview.PreviewLightDark
 import eu.hxreborn.amznkiller.ui.preview.PreviewWrapper
 import eu.hxreborn.amznkiller.ui.state.DashboardUiState
@@ -213,7 +222,7 @@ fun SettingsScreen(
                 val appearanceItemCount = 2
                 val themeShape = shapeForPosition(appearanceItemCount, 0)
                 preference(
-                    modifier = preferenceModifier(surface, themeShape),
+                    modifier = Modifier.preferenceModifier(surface, themeShape),
                     key = "theme",
                     icon = { Icon(Icons.Outlined.Palette, contentDescription = null) },
                     title = { PreferenceTitle(R.string.settings_theme) },
@@ -225,7 +234,7 @@ fun SettingsScreen(
 
                 val dynamicColorShape = shapeForPosition(appearanceItemCount, 1)
                 switchPreference(
-                    modifier = preferenceModifier(surface, dynamicColorShape),
+                    modifier = Modifier.preferenceModifier(surface, dynamicColorShape),
                     key = "dynamic_color",
                     value = prefs.useDynamicColor,
                     icon = { Icon(Icons.Outlined.FormatPaint, contentDescription = null) },
@@ -242,7 +251,7 @@ fun SettingsScreen(
                 val adBlockItemCount = 3
                 val filteringShape = shapeForPosition(adBlockItemCount, 0)
                 switchPreference(
-                    modifier = preferenceModifier(surface, filteringShape),
+                    modifier = Modifier.preferenceModifier(surface, filteringShape),
                     key = "css_injection",
                     value = prefs.injectionEnabled,
                     icon = { Icon(Icons.Outlined.Block, contentDescription = null) },
@@ -255,7 +264,7 @@ fun SettingsScreen(
 
                 val syncShape = shapeForPosition(adBlockItemCount, 1)
                 switchPreference(
-                    modifier = preferenceModifier(surface, syncShape),
+                    modifier = Modifier.preferenceModifier(surface, syncShape),
                     key = "auto_update",
                     value = prefs.autoUpdate,
                     icon = { Icon(Icons.Outlined.CloudSync, contentDescription = null) },
@@ -268,7 +277,7 @@ fun SettingsScreen(
 
                 val filterSourcesShape = shapeForPosition(adBlockItemCount, 2)
                 preference(
-                    modifier = preferenceModifier(surface, filterSourcesShape),
+                    modifier = Modifier.preferenceModifier(surface, filterSourcesShape),
                     key = "filter_sources",
                     icon = { Icon(Icons.Outlined.Link, contentDescription = null) },
                     title = { PreferenceTitle(R.string.settings_filter_sources) },
@@ -284,7 +293,7 @@ fun SettingsScreen(
                 val displayItemCount = 5
                 val chartsShape = shapeForPosition(displayItemCount, 0)
                 switchPreference(
-                    modifier = preferenceModifier(surface, chartsShape),
+                    modifier = Modifier.preferenceModifier(surface, chartsShape),
                     key = "price_charts",
                     value = prefs.priceChartsEnabled,
                     icon = { Icon(Icons.Outlined.TrendingUp, contentDescription = null) },
@@ -436,7 +445,7 @@ fun SettingsScreen(
                 val advancedItemCount = 3
                 val hideLauncherShape = shapeForPosition(advancedItemCount, 0)
                 switchPreference(
-                    modifier = preferenceModifier(surface, hideLauncherShape),
+                    modifier = Modifier.preferenceModifier(surface, hideLauncherShape),
                     key = "hide_launcher_icon",
                     value = prefs.isLauncherIconHidden,
                     icon = {
@@ -461,7 +470,7 @@ fun SettingsScreen(
 
                 val webviewDebugShape = shapeForPosition(advancedItemCount, 1)
                 switchPreference(
-                    modifier = preferenceModifier(surface, webviewDebugShape),
+                    modifier = Modifier.preferenceModifier(surface, webviewDebugShape),
                     key = "webview_debugging",
                     value = prefs.webviewDebugging,
                     icon = { Icon(Icons.Rounded.DeveloperMode, contentDescription = null) },
@@ -474,7 +483,7 @@ fun SettingsScreen(
 
                 val debugShape = shapeForPosition(advancedItemCount, 2)
                 switchPreference(
-                    modifier = preferenceModifier(surface, debugShape),
+                    modifier = Modifier.preferenceModifier(surface, debugShape),
                     key = "debug_logs",
                     value = prefs.debugLogs,
                     icon = { Icon(Icons.Rounded.BugReport, contentDescription = null) },
@@ -491,18 +500,19 @@ fun SettingsScreen(
                 val aboutItemCount = 4
                 val versionShape = shapeForPosition(aboutItemCount, 0)
                 preference(
-                    modifier = preferenceModifier(surface, versionShape),
+                    modifier = Modifier.preferenceModifier(surface, versionShape),
                     key = "app_version",
                     icon = { Icon(Icons.Rounded.Info, contentDescription = null) },
                     title = { PreferenceTitle(R.string.settings_app_version) },
                     summary = { Text("v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})") },
+                    onClick = shareholderEgg.onVersionTap,
                 )
 
                 item { Spacer(Modifier.height(Tokens.PreferenceItemGap)) }
 
                 val gitRepoShape = shapeForPosition(aboutItemCount, 1)
                 preference(
-                    modifier = preferenceModifier(surface, gitRepoShape),
+                    modifier = Modifier.preferenceModifier(surface, gitRepoShape),
                     key = "git_repo",
                     icon = { Icon(painterResource(R.drawable.ic_github_24), contentDescription = null) },
                     title = { PreferenceTitle(R.string.settings_git_repo) },
@@ -516,7 +526,7 @@ fun SettingsScreen(
 
                 val licensesShape = shapeForPosition(aboutItemCount, 2)
                 preference(
-                    modifier = preferenceModifier(surface, licensesShape),
+                    modifier = Modifier.preferenceModifier(surface, licensesShape),
                     key = "licenses",
                     icon = { Icon(Icons.Outlined.Gavel, contentDescription = null) },
                     title = { PreferenceTitle(R.string.settings_licenses) },
@@ -528,7 +538,7 @@ fun SettingsScreen(
 
                 val issueShape = shapeForPosition(aboutItemCount, 3)
                 preference(
-                    modifier = preferenceModifier(surface, issueShape),
+                    modifier = Modifier.preferenceModifier(surface, issueShape),
                     key = "report_issue",
                     icon = { Icon(Icons.Outlined.Feedback, contentDescription = null) },
                     title = { PreferenceTitle(R.string.settings_report_issue) },
@@ -539,6 +549,74 @@ fun SettingsScreen(
                 )
             }
         }
+    }
+
+    if (shareholderEgg.showBalloons) {
+        BalloonsOverlay(onDismiss = shareholderEgg.onDismissBalloons)
+    }
+}
+
+@Stable
+private class ShareholderEggState(
+    showBalloonsProvider: () -> Boolean,
+    val onDismissBalloons: () -> Unit,
+    val onVersionTap: () -> Unit,
+) {
+    val showBalloons: Boolean by derivedStateOf(showBalloonsProvider)
+}
+
+@Composable
+private fun rememberShareholderEgg(): ShareholderEggState {
+    val context = LocalContext.current
+    val alreadyMsg = stringResource(R.string.easter_shareholder_already)
+    val countdownLabels =
+        (1 until SHAREHOLDER_TAPS - 2).map { n ->
+            pluralStringResource(R.plurals.easter_shareholder_countdown, n, n)
+        }
+
+    var tapCount by rememberSaveable { mutableIntStateOf(0) }
+    var alreadyShareholder by rememberSaveable { mutableStateOf(false) }
+    var showBalloons by remember { mutableStateOf(false) }
+    val countdownToast = remember { mutableStateOf<Toast?>(null) }
+
+    fun showToast(text: CharSequence) {
+        countdownToast.value?.cancel()
+        countdownToast.value = Toast.makeText(context, text, Toast.LENGTH_SHORT).also { it.show() }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose { countdownToast.value?.cancel() }
+    }
+
+    return remember {
+        ShareholderEggState(
+            showBalloonsProvider = { showBalloons },
+            onDismissBalloons = { showBalloons = false },
+            onVersionTap = onVersionTap@{
+                when {
+                    showBalloons -> {
+                        return@onVersionTap
+                    }
+
+                    alreadyShareholder -> {
+                        showToast(alreadyMsg)
+                    }
+
+                    else -> {
+                        tapCount += 1
+                        val remaining = SHAREHOLDER_TAPS - tapCount
+                        if (remaining == 0) {
+                            countdownToast.value?.cancel()
+                            tapCount = 0
+                            alreadyShareholder = true
+                            showBalloons = true
+                        } else if (remaining in 1..countdownLabels.size) {
+                            showToast(countdownLabels[remaining - 1])
+                        }
+                    }
+                }
+            },
+        )
     }
 }
 
