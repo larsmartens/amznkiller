@@ -41,6 +41,11 @@ jobs:
         run: |
           BEHIND=$(git rev-list HEAD..upstream/main --count)
           echo "behind=$BEHIND" >> "$GITHUB_OUTPUT"
+          if [ "$BEHIND" != "0" ] || [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+          fi
           echo "Upstream is $BEHIND commit(s) ahead"
 
       - name: Capture fork baseline
@@ -93,24 +98,32 @@ jobs:
             git commit -m "chore: preserve fork workflows after upstream sync"
           fi
 
-      - name: Bump fork release metadata
-        if: steps.check.outputs.behind != '0'
+      - name: Prepare fork release metadata
+        if: steps.check.outputs.should_release == 'true'
         id: version
         run: |
           source .github/release.sh --source-only
           RAW_VERSION=$(grep '^version\.name=' gradle.properties | head -n 1 | cut -d= -f2- | tr -d '\r')
           BASE_VERSION=${RAW_VERSION%%-fork.*}
-          BUILD_COUNT=$(git rev-list --count HEAD)
-          VERSION_NAME="${BASE_VERSION}-fork.${BUILD_COUNT}"
-          VERSION_CODE=$(compute_version_code "$BASE_VERSION")
+          BASE_BUILD=$(git rev-list --count HEAD)
+          RUN_NUMBER=${GITHUB_RUN_NUMBER:-0}
+          RUN_ATTEMPT=${GITHUB_RUN_ATTEMPT:-1}
+          BUILD_NUMBER=$((BASE_BUILD + RUN_NUMBER * 10 + RUN_ATTEMPT))
+          VERSION_NAME="${BASE_VERSION}-fork.${BUILD_NUMBER}"
+          MAJOR=${BASE_VERSION%%.*}
+          REST=${BASE_VERSION#*.}
+          MINOR=${REST%%.*}
+          VERSION_CODE=$((MAJOR * 100000 + MINOR * 10000 + BUILD_NUMBER))
           TAG_NAME="v${VERSION_NAME}"
           TMP_PROPS=$(mktemp)
           grep -v '^version\.\(code\|name\)=' gradle.properties > "${TMP_PROPS}"
           printf '\nversion.code=%s\nversion.name=%s\n' "${VERSION_CODE}" "${VERSION_NAME}" >> "${TMP_PROPS}"
           mv "${TMP_PROPS}" gradle.properties
-          git add gradle.properties
-          if ! git diff --cached --quiet; then
-            git commit -m "chore: prepare fork release metadata"
+          if [ "${{ steps.check.outputs.behind }}" != "0" ]; then
+            git add gradle.properties
+            if ! git diff --cached --quiet; then
+              git commit -m "chore: prepare fork release metadata"
+            fi
           fi
           printf 'version_name=%s\n' "${VERSION_NAME}" >> "$GITHUB_OUTPUT"
           printf 'version_code=%s\n' "${VERSION_CODE}" >> "$GITHUB_OUTPUT"
@@ -121,13 +134,13 @@ jobs:
         run: git push origin main
 
       - name: Create and push release tag
-        if: steps.check.outputs.behind != '0'
+        if: steps.check.outputs.should_release == 'true'
         run: |
           git tag -a "${{ steps.version.outputs.tag_name }}" -m "${{ steps.version.outputs.tag_name }}"
           git push origin "${{ steps.version.outputs.tag_name }}"
 
       - name: Setup Java for release build
-        if: steps.check.outputs.behind != '0'
+        if: steps.check.outputs.should_release == 'true'
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -135,15 +148,15 @@ jobs:
           cache: gradle
 
       - name: Decode keystore
-        if: steps.check.outputs.behind != '0' && env.HAS_RELEASE_KEYSTORE == 'true'
+        if: steps.check.outputs.should_release == 'true' && env.HAS_RELEASE_KEYSTORE == 'true'
         run: echo "${{ secrets.RELEASE_KEYSTORE }}" | base64 -d > ${{ github.workspace }}/release.keystore
 
       - name: Report skipped release signing
-        if: steps.check.outputs.behind != '0' && env.HAS_RELEASE_KEYSTORE != 'true'
+        if: steps.check.outputs.should_release == 'true' && env.HAS_RELEASE_KEYSTORE != 'true'
         run: echo "::warning::RELEASE_KEYSTORE is not configured; release APK will be unsigned."
 
       - name: Detect prerelease
-        if: steps.check.outputs.behind != '0'
+        if: steps.check.outputs.should_release == 'true'
         id: prerelease
         run: |
           VERSION_NAME=${{ steps.version.outputs.version_name }}
@@ -154,7 +167,7 @@ jobs:
           fi
 
       - name: Build release APKs
-        if: steps.check.outputs.behind != '0'
+        if: steps.check.outputs.should_release == 'true'
         run: ./gradlew assembleDebug assembleRelease
         env:
           RELEASE_STORE_FILE: ${{ github.workspace }}/release.keystore
@@ -163,7 +176,7 @@ jobs:
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
 
       - name: Upload sync artifacts
-        if: steps.check.outputs.behind != '0'
+        if: steps.check.outputs.should_release == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: amznkiller-${{ steps.version.outputs.version_name }}
@@ -172,7 +185,7 @@ jobs:
             app/build/outputs/apk/debug/*.apk
 
       - name: Generate release notes
-        if: steps.check.outputs.behind != '0'
+        if: steps.check.outputs.should_release == 'true'
         id: changelog
         continue-on-error: true
         uses: orhun/git-cliff-action@v4
@@ -184,16 +197,20 @@ jobs:
           GITHUB_REPO: ${{ github.repository }}
 
       - name: Create GitHub release
-        if: steps.check.outputs.behind != '0'
+        if: steps.check.outputs.should_release == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag_name }}
           prerelease: ${{ steps.prerelease.outputs.value }}
           body: ${{ steps.changelog.outputs.content || '' }}
-          files: app/build/outputs/apk/release/*.apk
+          files: |
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/apk/debug/*.apk
+          fail_on_unmatched_files: true
+          make_latest: true
 
       - name: Mirror release to Xposed-Modules-Repo
-        if: steps.check.outputs.behind != '0' && env.HAS_XPOSED_REPO_PAT == 'true'
+        if: steps.check.outputs.should_release == 'true' && env.HAS_XPOSED_REPO_PAT == 'true'
         uses: softprops/action-gh-release@v2
         with:
           repository: Xposed-Modules-Repo/eu.hxreborn.amznkiller
@@ -206,5 +223,5 @@ jobs:
           make_latest: true
 
       - name: Report skipped Xposed mirror
-        if: steps.check.outputs.behind != '0' && env.HAS_XPOSED_REPO_PAT != 'true'
+        if: steps.check.outputs.should_release == 'true' && env.HAS_XPOSED_REPO_PAT != 'true'
         run: echo "::warning::XPOSED_REPO_PAT is not configured; fork release was created, but Xposed-Modules-Repo was not updated."
