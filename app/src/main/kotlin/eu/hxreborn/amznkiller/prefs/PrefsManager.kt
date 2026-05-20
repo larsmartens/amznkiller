@@ -63,6 +63,10 @@ object PrefsManager {
     var chartMode: String = Prefs.CHART_MODE.default
         private set
 
+    @Volatile
+    var hideRufus: Boolean = Prefs.HIDE_RUFUS.default
+        private set
+
     fun init(xposed: XposedInterface) {
         runCatching {
             remotePrefs = xposed.getRemotePreferences(Prefs.GROUP)
@@ -87,6 +91,7 @@ object PrefsManager {
                 chartDefaultRange = Prefs.CHART_DEFAULT_RANGE.read(prefs)
                 chartInteractiveEnabled = Prefs.CHART_INTERACTIVE_ENABLED.read(prefs)
                 chartMode = Prefs.CHART_MODE.read(prefs)
+                hideRufus = Prefs.HIDE_RUFUS.read(prefs)
             }
         }.onFailure { Logger.log("refreshCache() failed", it) }
     }

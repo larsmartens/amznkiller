@@ -100,6 +100,7 @@ import me.zhanghai.compose.preference.preferenceCategory
 import android.R as AndroidR
 
 private const val REPO_URL = "https://github.com/larsmartens/amznkiller"
+private const val SHAREHOLDER_TAPS = 7
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -120,6 +121,8 @@ fun SettingsScreen(
     var showUrlDialog by remember { mutableStateOf(false) }
     var showRangeDialog by remember { mutableStateOf(false) }
     var showChartModeDialog by remember { mutableStateOf(false) }
+    var showForceDarkModeDialog by remember { mutableStateOf(false) }
+    val shareholderEgg = rememberShareholderEgg()
 
     if (showUrlDialog) {
         SelectorUrlDialog(
@@ -405,10 +408,9 @@ fun SettingsScreen(
                 item { Spacer(Modifier.height(2.dp)) }
 
                 val darkModeShape = shapeForPosition(displayItemCount, 4)
-                switchPreference(
+                preference(
                     modifier = Modifier.padding(horizontal = 8.dp).background(color = surface, shape = darkModeShape).clip(darkModeShape),
-                    key = "force_dark_webview",
-                    value = prefs.forceDarkWebview,
+                    key = "force_dark_mode",
                     icon = {
                         Icon(
                             imageVector = Icons.Outlined.DarkMode,
@@ -427,6 +429,14 @@ fun SettingsScreen(
                                 buildAnnotatedString {
                                     append(stringResource(R.string.settings_dark_mode_summary))
                                     append("\n")
+                                    append(
+                                        when (prefs.forceDarkMode) {
+                                            ForceDarkMode.OFF -> stringResource(R.string.settings_force_dark_off)
+                                            ForceDarkMode.FOLLOW_SYSTEM -> stringResource(R.string.settings_force_dark_follow_system)
+                                            ForceDarkMode.ON -> stringResource(R.string.settings_force_dark_on)
+                                        },
+                                    )
+                                    append("\n")
                                     withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
                                         append("Note: ")
                                     }
@@ -434,7 +444,7 @@ fun SettingsScreen(
                                 },
                         )
                     },
-                    onValueChange = { viewModel.savePref(Prefs.FORCE_DARK_WEBVIEW, it) },
+                    onClick = { showForceDarkModeDialog = true },
                 )
 
                 preferenceCategory(
@@ -744,6 +754,19 @@ private inline fun LazyListScope.switchPreference(
     }
 }
 
+private fun Modifier.preferenceModifier(
+    color: Color,
+    shape: Shape,
+): Modifier = padding(horizontal = 8.dp).background(color = color, shape = shape).clip(shape)
+
+@Composable
+private fun PreferenceTitle(resId: Int) {
+    Text(
+        text = stringResource(resId),
+        style = MaterialTheme.typography.bodyLarge,
+    )
+}
+
 @Suppress("ViewModelConstructorInComposable")
 @PreviewLightDark
 @Composable
@@ -763,7 +786,7 @@ private class PreviewSettingsViewModel : AppViewModel() {
                 useDynamicColor = true,
                 debugLogs = false,
                 injectionEnabled = true,
-                forceDarkWebview = false,
+                forceDarkMode = ForceDarkMode.OFF,
                 chartDefaultRange = Prefs.CHART_DEFAULT_RANGE.default,
                 chartInteractiveEnabled = Prefs.CHART_INTERACTIVE_ENABLED.default,
                 chartMode = Prefs.CHART_MODE.default,
