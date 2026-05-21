@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      HAS_RELEASE_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE != '' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -27,7 +29,12 @@ jobs:
           cache: gradle
 
       - name: Decode keystore
+        if: env.HAS_RELEASE_KEYSTORE == 'true'
         run: echo "${{ secrets.RELEASE_KEYSTORE }}" | base64 -d > ${{ github.workspace }}/release.keystore
+
+      - name: Report skipped release signing
+        if: env.HAS_RELEASE_KEYSTORE != 'true'
+        run: echo "::warning::RELEASE_KEYSTORE is not configured; release APK will be unsigned."
 
       - name: Detect prerelease
         id: version
@@ -47,6 +54,7 @@ jobs:
           RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+          RELEASE_STORE_TYPE: ${{ secrets.RELEASE_STORE_TYPE || 'PKCS12' }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -70,15 +78,6 @@ jobs:
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
-          prerelease: ${{ steps.version.outputs.prerelease }}
-          body: ${{ steps.changelog.outputs.content || '' }}
-          files: app/build/outputs/apk/release/*.apk
-
-      - name: Mirror to Xposed-Modules-Repo
-        uses: softprops/action-gh-release@v2
-        with:
-          repository: Xposed-Modules-Repo/eu.hxreborn.amznkiller
-          token: ${{ secrets.XPOSED_REPO_PAT }}
           prerelease: ${{ steps.version.outputs.prerelease }}
           body: ${{ steps.changelog.outputs.content || '' }}
           files: app/build/outputs/apk/release/*.apk

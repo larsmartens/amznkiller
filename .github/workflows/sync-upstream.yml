@@ -17,7 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       HAS_RELEASE_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE != '' }}
-      HAS_XPOSED_REPO_PAT: ${{ secrets.XPOSED_REPO_PAT != '' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -174,6 +173,7 @@ jobs:
           RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+          RELEASE_STORE_TYPE: ${{ secrets.RELEASE_STORE_TYPE || 'PKCS12' }}
 
       - name: Upload sync artifacts
         if: steps.check.outputs.should_release == 'true'
@@ -203,25 +203,6 @@ jobs:
           tag_name: ${{ steps.version.outputs.tag_name }}
           prerelease: ${{ steps.prerelease.outputs.value }}
           body: ${{ steps.changelog.outputs.content || '' }}
-          files: |
-            app/build/outputs/apk/release/*.apk
-            app/build/outputs/apk/debug/*.apk
-          fail_on_unmatched_files: true
-          make_latest: true
-
-      - name: Mirror release to Xposed-Modules-Repo
-        if: steps.check.outputs.should_release == 'true' && env.HAS_XPOSED_REPO_PAT == 'true'
-        uses: softprops/action-gh-release@v2
-        with:
-          repository: Xposed-Modules-Repo/eu.hxreborn.amznkiller
-          token: ${{ secrets.XPOSED_REPO_PAT }}
-          tag_name: ${{ steps.version.outputs.tag_name }}
-          prerelease: ${{ steps.prerelease.outputs.value }}
-          body: ${{ steps.changelog.outputs.content || '' }}
           files: app/build/outputs/apk/release/*.apk
           fail_on_unmatched_files: true
           make_latest: true
-
-      - name: Report skipped Xposed mirror
-        if: steps.check.outputs.should_release == 'true' && env.HAS_XPOSED_REPO_PAT != 'true'
-        run: echo "::warning::XPOSED_REPO_PAT is not configured; fork release was created, but Xposed-Modules-Repo was not updated."
