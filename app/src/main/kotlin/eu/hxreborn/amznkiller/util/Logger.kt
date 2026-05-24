@@ -1,41 +1,34 @@
 package eu.hxreborn.amznkiller.util
 
+import android.content.SharedPreferences
 import android.util.Log
-import eu.hxreborn.amznkiller.prefs.PrefsManager
-import io.github.libxposed.api.XposedModule
+import eu.hxreborn.amznkiller.BuildConfig
+import eu.hxreborn.amznkiller.prefs.Prefs
+import eu.hxreborn.amznkiller.xposed.module
 
 object Logger {
-    private const val TAG = "AmznKiller"
-
-    private var module: XposedModule? = null
-
-    fun init(module: XposedModule) {
-        this.module = module
-    }
-
-    fun log(msg: String) {
-        module?.log(Log.INFO, TAG, msg)
-        Log.d(TAG, msg)
-    }
+    const val TAG = "AmznKiller"
 
     fun log(
+        level: Int,
         msg: String,
-        t: Throwable,
-    ) {
-        module?.log(Log.ERROR, TAG, msg, t)
-        Log.d(TAG, msg, t)
+        t: Throwable? = null,
+    ) = if (t != null) module.log(level, TAG, msg, t) else module.log(level, TAG, msg)
+
+    inline fun debug(msg: () -> String) {
+        if (debugEnabled()) module.log(Log.DEBUG, TAG, msg())
     }
 
-    fun logDebug(msg: String) {
-        if (!PrefsManager.debugLogs) return
-        log(msg)
-    }
+    @PublishedApi
+    internal fun debugEnabled(): Boolean =
+        BuildConfig.DEBUG ||
+            cachedPrefs()?.let { Prefs.DEBUG_LOGS.read(it) } == true
 
-    fun logDebug(
-        msg: String,
-        t: Throwable,
-    ) {
-        if (!PrefsManager.debugLogs) return
-        log(msg, t)
-    }
+    @Volatile
+    private var prefs: SharedPreferences? = null
+
+    private fun cachedPrefs(): SharedPreferences? =
+        prefs ?: runCatching { module.getRemotePreferences(Prefs.GROUP) }
+            .getOrNull()
+            ?.also { prefs = it }
 }
