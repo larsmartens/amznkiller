@@ -1,4 +1,9 @@
-# AmznKiller
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/banner_dark.png">
+    <img src="assets/banner_light.png" alt="AmznKiller" width="520">
+  </picture>
+</h1>
 
 ## Fork Changes
 
