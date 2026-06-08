@@ -56,7 +56,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -76,23 +75,17 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.hxreborn.amznkiller.BuildConfig
 import eu.hxreborn.amznkiller.R
 import eu.hxreborn.amznkiller.prefs.ForceDarkMode
-import eu.hxreborn.amznkiller.prefs.PrefSpec
 import eu.hxreborn.amznkiller.prefs.Prefs
 import eu.hxreborn.amznkiller.ui.component.BalloonsOverlay
+import eu.hxreborn.amznkiller.ui.preview.FakeAppViewModel
 import eu.hxreborn.amznkiller.ui.preview.PreviewLightDark
 import eu.hxreborn.amznkiller.ui.preview.PreviewWrapper
-import eu.hxreborn.amznkiller.ui.state.DashboardUiState
-import eu.hxreborn.amznkiller.ui.state.SettingsUiState
 import eu.hxreborn.amznkiller.ui.state.SettingsUiState.Loading
 import eu.hxreborn.amznkiller.ui.state.SettingsUiState.Ready
 import eu.hxreborn.amznkiller.ui.theme.AmznKillerSurfaceDefaults
-import eu.hxreborn.amznkiller.ui.theme.DarkThemeConfig
 import eu.hxreborn.amznkiller.ui.theme.Tokens
 import eu.hxreborn.amznkiller.ui.util.shapeForPosition
 import eu.hxreborn.amznkiller.ui.viewmodel.AppViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import me.zhanghai.compose.preference.SwitchPreference
 import me.zhanghai.compose.preference.preference
@@ -771,8 +764,9 @@ private fun PreferenceTitle(resId: Int) {
 @PreviewLightDark
 @Composable
 private fun SettingsScreenPreview() {
+    val app = LocalContext.current.applicationContext as android.app.Application
     PreviewWrapper {
-        SettingsScreen(viewModel = PreviewSettingsViewModel())
+        SettingsScreen(viewModel = FakeAppViewModel(app))
     }
 }
 

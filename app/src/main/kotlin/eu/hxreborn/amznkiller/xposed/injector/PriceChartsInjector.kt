@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.webkit.WebView
-import eu.hxreborn.amznkiller.prefs.PrefsSnapshot
 import eu.hxreborn.amznkiller.util.Logger
 import eu.hxreborn.amznkiller.xposed.bridge.ChartMode
 import eu.hxreborn.amznkiller.xposed.bridge.KeepaDataScraper
@@ -46,10 +45,9 @@ object PriceChartsInjector {
 
     fun inject(
         webView: WebView,
-        prefs: PrefsSnapshot,
         amazon: AmazonUrlInfo,
     ) {
-        if (!prefs.priceChartsEnabled) return
+        if (!cachedPriceChartsEnabled) return
         if (!amazon.isProductPage) return
         val asin = amazon.asin ?: return
         val domain = amazon.domain ?: return

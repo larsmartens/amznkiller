@@ -8,7 +8,7 @@ object Prefs {
     val STALE_THRESHOLD_MS = STALE_THRESHOLD.inWholeMilliseconds
 
     val SELECTOR_URL =
-        StringPref(
+        stringPref(
             "selector_url",
             "https://raw.githubusercontent.com/larsmartens/amznkiller/main/lists/generated/merged.txt",
         )
@@ -24,12 +24,12 @@ object Prefs {
     val CHART_INTERACTIVE_ENABLED = BoolPref("chart_interactive_enabled", true)
     val CHART_MODE = StringPref("chart_mode", "static")
 
-    val HIDE_RUFUS = BoolPref("hide_rufus", false)
-    val LAST_REFRESH_FAILED = BoolPref("last_refresh_failed", false)
-    val AUTO_UPDATE = BoolPref("auto_update", true)
+    val HIDE_RUFUS = boolPref("hide_rufus", false)
+    val LAST_REFRESH_FAILED = boolPref("last_refresh_failed", false)
+    val AUTO_UPDATE = boolPref("auto_update", true)
 
-    val DARK_THEME_CONFIG = StringPref("dark_theme_config", "follow_system")
-    val USE_DYNAMIC_COLOR = BoolPref("use_dynamic_color", true)
+    val DARK_THEME_CONFIG = stringPref("dark_theme_config", "follow_system")
+    val USE_DYNAMIC_COLOR = boolPref("use_dynamic_color", true)
 
     val all: List<PrefSpec<*>> =
         listOf(
