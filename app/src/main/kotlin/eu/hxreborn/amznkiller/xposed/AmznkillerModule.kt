@@ -27,10 +27,7 @@ internal lateinit var module: AmznkillerModule
 class AmznkillerModule : XposedModule() {
     override fun onModuleLoaded(param: ModuleLoadedParam) {
         module = this
-        Logger.log(
-            Log.INFO,
-            "Module v${BuildConfig.VERSION_NAME} on $frameworkName $frameworkVersion",
-        )
+        Logger.info("Module v${BuildConfig.VERSION_NAME} on $frameworkName $frameworkVersion")
     }
 
     override fun onPackageReady(param: PackageReadyParam) {
@@ -81,6 +78,8 @@ class AmznkillerModule : XposedModule() {
         }.getOrNull()
 
     companion object {
+        const val TAG = "AmznKiller"
+
         val AMAZON_PACKAGES =
             setOf(
                 "com.amazon.mShop.android.shopping",

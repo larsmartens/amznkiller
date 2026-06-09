@@ -7,7 +7,26 @@ import eu.hxreborn.amznkiller.prefs.Prefs
 import eu.hxreborn.amznkiller.prefs.PrefsRepository
 import io.github.libxposed.service.XposedService
 import io.github.libxposed.service.XposedServiceHelper
-import java.util.concurrent.CopyOnWriteArrayList
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+
+data class XposedState(
+    val active: Boolean = false,
+    val frameworkVersion: String? = null,
+)
+
+class App :
+    Application(),
+    XposedServiceHelper.OnServiceListener {
+    @Volatile
+    private var mService: XposedService? = null
+
+    lateinit var prefsRepository: PrefsRepository
+        private set
+
+    private val _xposedState = MutableStateFlow(XposedState())
+    val xposedState: StateFlow<XposedState> = _xposedState.asStateFlow()
 
 class App :
     Application(),
