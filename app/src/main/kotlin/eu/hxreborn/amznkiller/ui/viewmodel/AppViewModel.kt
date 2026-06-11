@@ -196,7 +196,7 @@ open class AppViewModel(
         pref: PrefSpec<T>,
         value: T,
     ) {
-        repository.save(pref, value)
+        viewModelScope.launch(Dispatchers.IO) { repository.save(pref, value) }
     }
 
     open fun setLauncherIconHidden(hidden: Boolean) {

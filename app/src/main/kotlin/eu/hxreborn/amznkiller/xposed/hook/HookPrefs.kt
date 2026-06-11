@@ -34,6 +34,7 @@ import io.github.libxposed.api.XposedInterface
 
 @Volatile private var prefsListener: SharedPreferences.OnSharedPreferenceChangeListener? = null
 
+// hot path, read on every hooked call, so OFF and ON skip the config lookup
 internal val forceDarkWebview: Boolean
     get() = cachedForceDarkMode.isActive(systemInDarkMode())
 
@@ -76,10 +77,13 @@ private fun systemInDarkMode(): Boolean {
     return uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
 }
 
+@Volatile private var cachedApplication: Application? = null
+
+// application is stable per process so cache after the first successful lookup
 private fun currentApplication(): Application? =
-    runCatching {
+    cachedApplication ?: runCatching {
         Class
             .forName("android.app.ActivityThread")
             .getMethod("currentApplication")
             .invoke(null) as? Application
-    }.getOrNull()
+    }.getOrNull()?.also { cachedApplication = it }
