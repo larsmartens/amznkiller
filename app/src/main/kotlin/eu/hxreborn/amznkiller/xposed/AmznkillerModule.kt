@@ -80,11 +80,6 @@ class AmznkillerModule : XposedModule() {
     companion object {
         const val TAG = "AmznKiller"
 
-        val AMAZON_PACKAGES =
-            setOf(
-                "com.amazon.mShop.android.shopping",
-                "in.amazon.mShop.android.shopping",
-            )
         private const val TOAST_DELAY_MS = 1500L
 
         private val TOAST_MESSAGES =
