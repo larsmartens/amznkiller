@@ -30,6 +30,7 @@ import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Timeline
 import androidx.compose.material.icons.outlined.TouchApp
 import androidx.compose.material.icons.outlined.TrendingUp
+import androidx.compose.material.icons.outlined.VideocamOff
 import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.DeveloperMode
 import androidx.compose.material.icons.rounded.Info
