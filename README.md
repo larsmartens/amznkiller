@@ -94,7 +94,7 @@ Amazon disables Android force dark via `forceDarkAllowed=false` in its theme. Th
 
 The API this relies on landed in Android 15 (API 35). On Android 10-14 Amazon's opt-out blocks the fallback path.
 
-On some Android 15+ devices it still is not enough and native views stay light. Not confirmed yet, only hints so far, tracked in [#6](https://github.com/hxreborn/amznkiller/issues/6). If it affects you, enable debug logs and include `dark probe forcedarktype`.
+On some Android 15+ devices it still is not enough and native views stay light. Not confirmed yet, only hints so far, tracked in [#6](https://github.com/larsmartens/amznkiller/issues/6). If it affects you, enable debug logs and include `dark probe forcedarktype`.
 
 Disabled by default. Enable in settings if on Android 15+.
 
