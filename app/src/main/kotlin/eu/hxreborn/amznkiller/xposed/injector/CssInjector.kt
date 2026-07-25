@@ -12,6 +12,8 @@ import org.json.JSONObject
 import java.util.WeakHashMap
 
 object CssInjector {
+    private const val WHITELIST_RULE_COUNT = 1
+
     private data class InjectionKey(
         val url: String,
         val selectorsHash: Int,
@@ -21,6 +23,10 @@ object CssInjector {
     private var cachedCss: String? = null
     private var cachedHash: Int = 0
     private var lastValidatedHash: Int = 0
+
+    fun onNavigation(webView: WebView) {
+        lastInjectionByWebView.remove(webView)
+    }
 
     fun inject(
         webView: WebView,
@@ -35,7 +41,10 @@ object CssInjector {
 
         val hash = selectors.hashCode()
         lastInjectionByWebView[webView]?.let { last ->
-            if (last.url == url && last.selectorsHash == hash) return
+            if (last.url == url && last.selectorsHash == hash) {
+                Logger.debug { "css skip reason=already-injected" }
+                return
+            }
         }
 
         val css = getOrBuildCss(selectors, hash)
@@ -47,7 +56,7 @@ object CssInjector {
                 put("css", css)
                 put("hash", hash)
                 put("validate", shouldValidate)
-                put("expectedRules", selectors.size)
+                put("expectedRules", selectors.size + WHITELIST_RULE_COUNT)
             }
         val script = "${
             ScriptRepository.get(
@@ -55,6 +64,7 @@ object CssInjector {
             )
         }\nwindow.AmznKiller.blockAds($args);"
         lastInjectionByWebView[webView] = InjectionKey(url, hash)
+        Logger.debug { "css inject rules=${selectors.size}" }
 
         WebViewJsExecutor.evaluate(webView, script, "CssInjector") { result ->
             if (result == null || result == "null" || result.contains("\"ok\":true")) {
