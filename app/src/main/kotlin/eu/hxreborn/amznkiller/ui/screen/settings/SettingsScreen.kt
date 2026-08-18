@@ -293,7 +293,7 @@ fun SettingsScreen(
                     modifier = Modifier.preferenceModifier(surface, chartsShape),
                     key = "price_charts",
                     value = prefs.priceChartsEnabled,
-                    icon = { Icon(Icons.Outlined.TrendingUp, contentDescription = null) },
+                    icon = { Icon(Icons.AutoMirrored.Outlined.TrendingUp, contentDescription = null) },
                     title = { PreferenceTitle(R.string.settings_marketplace_insights) },
                     summary = { Text(stringResource(R.string.settings_marketplace_insights_summary)) },
                     onValueChange = { viewModel.savePref(Prefs.PRICE_CHARTS_ENABLED, it) },

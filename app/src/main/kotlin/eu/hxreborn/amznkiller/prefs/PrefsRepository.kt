@@ -62,6 +62,13 @@ class PrefsRepository(
     val autoUpdate: Boolean
         get() = Prefs.AUTO_UPDATE.read(local)
 
+    val isStale: Boolean
+        get() {
+            val lastFetched = Prefs.LAST_FETCHED.read(local)
+            return lastFetched == 0L ||
+                System.currentTimeMillis() - lastFetched > Prefs.STALE_THRESHOLD_MS
+        }
+
     fun <T> save(
         pref: PrefSpec<T>,
         value: T,
