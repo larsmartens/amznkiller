@@ -28,7 +28,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.DialogProperties
 import eu.hxreborn.amznkiller.R
@@ -63,7 +63,7 @@ internal fun SelectorUrlDialog(
     val isHttps = HttpClient.isHttps(url)
     val showHttpsError = url.isNotBlank() && !isHttps
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
+    val resources = LocalResources.current
 
     BasicAlertDialog(
         onDismissRequest = onDismiss,
@@ -129,7 +129,7 @@ internal fun SelectorUrlDialog(
                                                 is MergeResult.Success -> {
                                                     TestOutcome(
                                                         message =
-                                                            context.getString(
+                                                            resources.getString(
                                                                 R.string.settings_selector_url_test_found,
                                                                 mergeResult.selectors.size,
                                                             ),
@@ -140,7 +140,7 @@ internal fun SelectorUrlDialog(
                                                 is MergeResult.Partial -> {
                                                     TestOutcome(
                                                         message =
-                                                            context.getString(
+                                                            resources.getString(
                                                                 R.string.settings_selector_url_test_partial,
                                                                 mergeResult.selectors.size,
                                                             ),
@@ -152,7 +152,7 @@ internal fun SelectorUrlDialog(
                                         onFailure = {
                                             TestOutcome(
                                                 message =
-                                                    context.getString(
+                                                    resources.getString(
                                                         R.string.settings_selector_url_test_failed,
                                                         it.message.orEmpty(),
                                                     ),
