@@ -31,7 +31,7 @@ class AmznkillerModule : XposedModule() {
     }
 
     override fun onPackageReady(param: PackageReadyParam) {
-        if (param.packageName !in AMAZON_PACKAGES || !param.isFirstPackage) return
+        if (param.packageName !in BuildConfig.TARGET_PACKAGES || !param.isFirstPackage) return
         Logger.log(Log.INFO, "loaded pkg=${param.packageName} pid=${Process.myPid()}")
 
         installHookPrefs(this)

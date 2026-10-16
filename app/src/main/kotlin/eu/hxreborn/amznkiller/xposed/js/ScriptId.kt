@@ -4,6 +4,7 @@ enum class ScriptId(
     val path: String,
 ) {
     AD_BLOCK("payload/js/ad_block.js"),
+    VIDEO_AUTOPLAY("payload/js/video_autoplay.js"),
     DARK_MODE("payload/js/dark_mode.js"),
     CHARTS("payload/js/charts.js"),
     CHARTS_CUSTOM("payload/js/charts_custom.js"),

@@ -18,8 +18,15 @@ jobs:
           java-version: 21
           cache: gradle
 
-      - name: Build
-        run: ./gradlew assembleDebug assembleRelease
+      - name: Test release version allocation
+        run: bash .github/test_release.sh
+
+      - name: Build and lint
+        run: |
+          ./gradlew ktlintCheck lintDebug assembleDebug assembleRelease || {
+            cat app/build/intermediates/lint_intermediate_text_report/debug/lintReportDebug/lint-results-debug.txt 2>/dev/null || true
+            exit 1
+          }
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
