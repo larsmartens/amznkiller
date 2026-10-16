@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "0 6 * * *"
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Build and validate without pushing commits, tags or releases
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -16,6 +21,8 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     env:
+      GH_TOKEN: ${{ github.token }}
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || github.ref != 'refs/heads/main' }}
       HAS_RELEASE_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE != '' }}
 
     steps:
@@ -40,10 +47,12 @@ jobs:
         run: |
           BEHIND=$(git rev-list HEAD..upstream/main --count)
           echo "behind=$BEHIND" >> "$GITHUB_OUTPUT"
-          if [ "$BEHIND" != "0" ] || [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          LAST_RELEASE=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '[.[] | select(.draft == false and .prerelease == false)][0].tag_name // ""')
+          if [ "$DRY_RUN" = "true" ] || [ "$BEHIND" != "0" ] || [ -z "$LAST_RELEASE" ] || ! git diff --quiet "$LAST_RELEASE" HEAD -- . ':!gradle.properties'; then
             echo "should_release=true" >> "$GITHUB_OUTPUT"
           else
             echo "should_release=false" >> "$GITHUB_OUTPUT"
+            echo "No changes since published release $LAST_RELEASE"
           fi
           echo "Upstream is $BEHIND commit(s) ahead"
 
@@ -92,7 +101,7 @@ jobs:
         if: steps.check.outputs.behind != '0'
         run: |
           git restore --source="${{ steps.base.outputs.sha }}" --staged --worktree .github/workflows || true
-          if ! git diff --quiet -- .github/workflows; then
+          if ! git diff --cached --quiet -- .github/workflows; then
             git add .github/workflows
             git commit -m "chore: preserve fork workflows after upstream sync"
           fi
@@ -107,36 +116,21 @@ jobs:
           BASE_BUILD=$(git rev-list --count HEAD)
           RUN_NUMBER=${GITHUB_RUN_NUMBER:-0}
           RUN_ATTEMPT=${GITHUB_RUN_ATTEMPT:-1}
-          BUILD_NUMBER=$((BASE_BUILD + RUN_NUMBER * 10 + RUN_ATTEMPT))
+          BUILD_NUMBER=$(next_fork_build_number "$BASE_VERSION" "$((BASE_BUILD + RUN_NUMBER * 10 + RUN_ATTEMPT))")
           VERSION_NAME="${BASE_VERSION}-fork.${BUILD_NUMBER}"
           MAJOR=${BASE_VERSION%%.*}
           REST=${BASE_VERSION#*.}
           MINOR=${REST%%.*}
           VERSION_CODE=$((MAJOR * 100000 + MINOR * 10000 + BUILD_NUMBER))
           TAG_NAME="v${VERSION_NAME}"
-          TMP_PROPS=$(mktemp)
-          grep -v '^version\.\(code\|name\)=' gradle.properties > "${TMP_PROPS}"
-          printf '\nversion.code=%s\nversion.name=%s\n' "${VERSION_CODE}" "${VERSION_NAME}" >> "${TMP_PROPS}"
-          mv "${TMP_PROPS}" gradle.properties
-          if [ "${{ steps.check.outputs.behind }}" != "0" ]; then
-            git add gradle.properties
-            if ! git diff --cached --quiet; then
-              git commit -m "chore: prepare fork release metadata"
-            fi
+          sed -i "s/^version\.code=.*/version.code=${VERSION_CODE}/; s/^version\.name=.*/version.name=${VERSION_NAME}/" gradle.properties
+          git add gradle.properties
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: prepare fork release metadata"
           fi
           printf 'version_name=%s\n' "${VERSION_NAME}" >> "$GITHUB_OUTPUT"
           printf 'version_code=%s\n' "${VERSION_CODE}" >> "$GITHUB_OUTPUT"
           printf 'tag_name=%s\n' "${TAG_NAME}" >> "$GITHUB_OUTPUT"
-
-      - name: Push synced branch
-        if: steps.check.outputs.behind != '0'
-        run: git push origin main
-
-      - name: Create and push release tag
-        if: steps.check.outputs.should_release == 'true'
-        run: |
-          git tag -a "${{ steps.version.outputs.tag_name }}" -m "${{ steps.version.outputs.tag_name }}"
-          git push origin "${{ steps.version.outputs.tag_name }}"
 
       - name: Setup Java for release build
         if: steps.check.outputs.should_release == 'true'
@@ -167,7 +161,7 @@ jobs:
 
       - name: Build release APKs
         if: steps.check.outputs.should_release == 'true'
-        run: ./gradlew assembleDebug assembleRelease
+        run: ./gradlew ktlintCheck lintDebug assembleDebug assembleRelease
         env:
           RELEASE_STORE_FILE: ${{ github.workspace }}/release.keystore
           RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
@@ -184,8 +178,16 @@ jobs:
             app/build/outputs/apk/release/*.apk
             app/build/outputs/apk/debug/*.apk
 
+      - name: Publish validated commit and release tag
+        if: steps.check.outputs.should_release == 'true' && env.DRY_RUN != 'true'
+        env:
+          TAG_NAME: ${{ steps.version.outputs.tag_name }}
+        run: |
+          git tag -a "$TAG_NAME" -m "$TAG_NAME"
+          git push --atomic origin HEAD:main "refs/tags/$TAG_NAME"
+
       - name: Generate release notes
-        if: steps.check.outputs.should_release == 'true'
+        if: steps.check.outputs.should_release == 'true' && env.DRY_RUN != 'true'
         id: changelog
         continue-on-error: true
         uses: orhun/git-cliff-action@v4
@@ -197,7 +199,7 @@ jobs:
           GITHUB_REPO: ${{ github.repository }}
 
       - name: Create GitHub release
-        if: steps.check.outputs.should_release == 'true'
+        if: steps.check.outputs.should_release == 'true' && env.DRY_RUN != 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag_name }}

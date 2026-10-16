@@ -23,7 +23,13 @@ object WebViewHook {
                                     ChartBridge(webView),
                                     ChartBridge.BRIDGE_NAME,
                                 )
-                            }.onFailure { Logger.log("Failed to inject ChartBridge", it) }
+                            }.onFailure {
+                                Logger.log(
+                                    Log.ERROR,
+                                    "Failed to inject ChartBridge",
+                                    it,
+                                )
+                            }
                             PageRuntime.onPageStarted(webView)
                             null
                         }

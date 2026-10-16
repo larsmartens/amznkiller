@@ -53,6 +53,22 @@ code_v1_0=$(compute_version_code "1.0.0")
 code_v1_1=$(compute_version_code "1.1.0")
 assert_eq "minor 1.1 > minor 1.0" "1" "$(( code_v1_1 > code_v1_0 ? 1 : 0 ))"
 
+# Exercise version allocation against isolated tag histories.
+TEST_REPO=$(mktemp -d)
+trap 'rm -rf "$TEST_REPO"' EXIT
+pushd "$TEST_REPO" >/dev/null
+git init -q
+git -c user.name=Test -c user.email=test@example.invalid commit -q --allow-empty -m initial
+assert_eq "fork without tags" "10" "$(next_fork_build_number 2.1.0 10)"
+git tag v2.1.0-fork.2676
+git tag v2.1.0-fork.999
+git tag v2.0.0-fork.9000
+assert_eq "skip existing failed-release tags" "2677" "$(next_fork_build_number 2.1.0 1000)"
+assert_eq "preserve higher run-derived build" "3000" "$(next_fork_build_number 2.1.0 3000)"
+git tag v2.1.0-fork.2677
+assert_eq "retry cannot reuse a tag" "2678" "$(next_fork_build_number 2.1.0 1000)"
+popd >/dev/null
+
 echo ""
 if (( FAIL > 0 )); then
 	echo "FAILED: $FAIL tests failed, $PASS passed"

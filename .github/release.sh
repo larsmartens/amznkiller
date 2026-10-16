@@ -10,6 +10,19 @@ compute_version_code() {
 	echo $(( major * 100000 + minor * 10000 + commits ))
 }
 
+# Existing tags are immutable, including tags from failed builds.
+next_fork_build_number() {
+  local base="$1" candidate="$2" tag suffix
+  while IFS= read -r tag; do
+    suffix="${tag#"v${base}-fork."}"
+    [[ "$suffix" =~ ^[0-9]+$ ]] || continue
+    if (( 10#$suffix >= candidate )); then
+      candidate=$((10#$suffix + 1))
+    fi
+  done < <(git tag --list "v${base}-fork.*")
+  echo "$candidate"
+}
+
 # Allow sourcing without running the release flow
 [[ "${1:-}" == "--source-only" ]] && return 0 2>/dev/null || true
 if [[ "${1:-}" == "--source-only" ]]; then exit 0; fi

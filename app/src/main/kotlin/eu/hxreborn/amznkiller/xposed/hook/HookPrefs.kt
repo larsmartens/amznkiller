@@ -28,6 +28,15 @@ import io.github.libxposed.api.XposedInterface
 
 @Volatile internal var cachedPriceChartsEnabled: Boolean = Prefs.PRICE_CHARTS_ENABLED.default
 
+@Volatile internal var cachedChartDefaultRange: String = Prefs.CHART_DEFAULT_RANGE.default
+
+@Volatile
+internal var cachedChartInteractiveEnabled: Boolean = Prefs.CHART_INTERACTIVE_ENABLED.default
+
+@Volatile internal var cachedChartMode: String = Prefs.CHART_MODE.default
+
+@Volatile internal var disableVideoAutoplay: Boolean = Prefs.DISABLE_VIDEO_AUTOPLAY.default
+
 @Volatile internal var cachedHideRufus: Boolean = Prefs.HIDE_RUFUS.default
 
 @Volatile private var remotePrefs: SharedPreferences? = null
@@ -68,6 +77,10 @@ internal fun loadHookPrefs(prefs: SharedPreferences) {
         cachedWebviewDebugging = Prefs.WEBVIEW_DEBUGGING.read(prefs)
         cachedForceDarkMode = Prefs.readForceDarkMode(prefs)
         cachedPriceChartsEnabled = Prefs.PRICE_CHARTS_ENABLED.read(prefs)
+        cachedChartDefaultRange = Prefs.CHART_DEFAULT_RANGE.read(prefs)
+        cachedChartInteractiveEnabled = Prefs.CHART_INTERACTIVE_ENABLED.read(prefs)
+        cachedChartMode = Prefs.CHART_MODE.read(prefs)
+        disableVideoAutoplay = Prefs.DISABLE_VIDEO_AUTOPLAY.read(prefs)
         cachedHideRufus = Prefs.HIDE_RUFUS.read(prefs)
     }.onFailure { Logger.log(Log.ERROR, "prefs refresh", it) }
 }

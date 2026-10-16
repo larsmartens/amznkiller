@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.TrendingUp
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.CloudSync
@@ -29,8 +30,6 @@ import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Timeline
 import androidx.compose.material.icons.outlined.TouchApp
-import androidx.compose.material.icons.outlined.TrendingUp
-import androidx.compose.material.icons.outlined.VideocamOff
 import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.DeveloperMode
 import androidx.compose.material.icons.rounded.Info
@@ -57,6 +56,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -769,42 +769,4 @@ private fun SettingsScreenPreview() {
     PreviewWrapper {
         SettingsScreen(viewModel = FakeAppViewModel(app))
     }
-}
-
-private class PreviewSettingsViewModel : AppViewModel() {
-    override val dashboardUiState: StateFlow<DashboardUiState> = MutableStateFlow(DashboardUiState.Loading).asStateFlow()
-
-    override val settingsUiState: StateFlow<SettingsUiState> =
-        MutableStateFlow(
-            Ready(
-                darkThemeConfig = DarkThemeConfig.FOLLOW_SYSTEM,
-                useDynamicColor = true,
-                debugLogs = false,
-                injectionEnabled = true,
-                forceDarkMode = ForceDarkMode.OFF,
-                chartDefaultRange = Prefs.CHART_DEFAULT_RANGE.default,
-                chartInteractiveEnabled = Prefs.CHART_INTERACTIVE_ENABLED.default,
-                chartMode = Prefs.CHART_MODE.default,
-            ),
-        ).asStateFlow()
-
-    override fun refreshAll() {}
-
-    override fun triggerAutoUpdateIfEnabled() {}
-
-    override fun setXposedActive(
-        active: Boolean,
-        frameworkVersion: String?,
-    ) {
-    }
-
-    override fun <T : Any> savePref(
-        pref: PrefSpec<T>,
-        value: T,
-    ) {
-    }
-
-    override fun setLauncherIconHidden(hidden: Boolean) {}
-
-    override fun syncLocalToRemote() {}
 }

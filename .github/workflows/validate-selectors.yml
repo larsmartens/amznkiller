@@ -1,6 +1,12 @@
 name: Validate selectors
 
 on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'lists/**'
+      - 'scripts/**'
+      - '.github/workflows/validate-selectors.yml'
   pull_request:
     paths:
       - 'lists/**'
