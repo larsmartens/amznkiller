@@ -4,6 +4,15 @@ on:
   push:
     tags:
       - 'v*'
+  pull_request:
+    paths:
+      - '.github/workflows/build.yml'
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish release (select an existing version tag as the workflow ref)
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -39,7 +48,14 @@ jobs:
       - name: Detect prerelease
         id: version
         run: |
-          VERSION_NAME=${GITHUB_REF#refs/tags/v}
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            VERSION_NAME=${GITHUB_REF#refs/tags/v}
+            ACTUAL_VERSION=$(sed -n 's/^version\.name=//p' gradle.properties | tr -d '\r')
+            [[ "$VERSION_NAME" = "$ACTUAL_VERSION" ]] || { echo "Tag/version metadata mismatch"; exit 1; }
+          else
+            [[ "${{ inputs.publish }}" != "true" ]] || { echo "Publishing requires a version tag ref"; exit 1; }
+            VERSION_NAME=$(sed -n 's/^version\.name=//p' gradle.properties | tr -d '\r')
+          fi
           echo "name=$VERSION_NAME" >> $GITHUB_OUTPUT
           if [[ "$VERSION_NAME" =~ (rc|alpha|beta) ]]; then
             echo "prerelease=true" >> $GITHUB_OUTPUT
@@ -48,7 +64,7 @@ jobs:
           fi
 
       - name: Build APKs
-        run: ./gradlew assembleDebug assembleRelease
+        run: ./gradlew ktlintCheck lintDebug assembleDebug assembleRelease
         env:
           RELEASE_STORE_FILE: ${{ github.workspace }}/release.keystore
           RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
@@ -65,6 +81,7 @@ jobs:
             app/build/outputs/apk/debug/*.apk
 
       - name: Generate release notes
+        if: github.event_name == 'push' || inputs.publish
         id: changelog
         continue-on-error: true
         uses: orhun/git-cliff-action@v4
@@ -76,6 +93,7 @@ jobs:
           GITHUB_REPO: ${{ github.repository }}
 
       - name: Create release
+        if: github.event_name == 'push' || inputs.publish
         uses: softprops/action-gh-release@v2
         with:
           prerelease: ${{ steps.version.outputs.prerelease }}

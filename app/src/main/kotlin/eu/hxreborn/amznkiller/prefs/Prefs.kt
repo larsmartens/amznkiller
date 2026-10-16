@@ -12,18 +12,19 @@ object Prefs {
             "selector_url",
             "https://raw.githubusercontent.com/larsmartens/amznkiller/main/lists/generated/merged.txt",
         )
-    val CACHED_SELECTORS = StringPref("cached_selectors", "")
-    val LAST_FETCHED = LongPref("last_fetched", 0L)
-    val DEBUG_LOGS = BoolPref("debug_logs", false)
-    val INJECTION_ENABLED = BoolPref("injection_enabled", true)
-    val WEBVIEW_DEBUGGING = BoolPref("webview_debugging", false)
-    val FORCE_DARK_WEBVIEW = BoolPref("force_dark_webview", false)
-    val FORCE_DARK_MODE = StringPref("force_dark_mode", ForceDarkMode.OFF.prefValue)
-    val PRICE_CHARTS_ENABLED = BoolPref("price_charts_enabled", false)
-    val CHART_DEFAULT_RANGE = StringPref("chart_default_range", "all")
-    val CHART_INTERACTIVE_ENABLED = BoolPref("chart_interactive_enabled", true)
-    val CHART_MODE = StringPref("chart_mode", "static")
+    val CACHED_SELECTORS = stringPref("cached_selectors", "")
+    val LAST_FETCHED = longPref("last_fetched", 0L)
+    val DEBUG_LOGS = boolPref("debug_logs", false)
+    val INJECTION_ENABLED = boolPref("injection_enabled", true)
+    val WEBVIEW_DEBUGGING = boolPref("webview_debugging", false)
+    val FORCE_DARK_WEBVIEW = boolPref("force_dark_webview", false)
+    val FORCE_DARK_MODE = stringPref("force_dark_mode", ForceDarkMode.OFF.prefValue)
+    val PRICE_CHARTS_ENABLED = boolPref("price_charts_enabled", false)
+    val CHART_DEFAULT_RANGE = stringPref("chart_default_range", "all")
+    val CHART_INTERACTIVE_ENABLED = boolPref("chart_interactive_enabled", true)
+    val CHART_MODE = stringPref("chart_mode", "static")
 
+    val DISABLE_VIDEO_AUTOPLAY = boolPref("disable_video_autoplay", false)
     val HIDE_RUFUS = boolPref("hide_rufus", false)
     val LAST_REFRESH_FAILED = boolPref("last_refresh_failed", false)
     val AUTO_UPDATE = boolPref("auto_update", true)
@@ -37,6 +38,7 @@ object Prefs {
             CACHED_SELECTORS,
             LAST_FETCHED,
             HIDE_RUFUS,
+            DISABLE_VIDEO_AUTOPLAY,
             LAST_REFRESH_FAILED,
             DEBUG_LOGS,
             INJECTION_ENABLED,

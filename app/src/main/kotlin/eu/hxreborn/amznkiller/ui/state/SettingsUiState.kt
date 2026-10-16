@@ -20,6 +20,8 @@ sealed interface SettingsUiState {
         val chartDefaultRange: String = Prefs.CHART_DEFAULT_RANGE.default,
         val chartInteractiveEnabled: Boolean = Prefs.CHART_INTERACTIVE_ENABLED.default,
         val chartMode: String = Prefs.CHART_MODE.default,
+        val hideRufus: Boolean = Prefs.HIDE_RUFUS.default,
+        val disableVideoAutoplay: Boolean = Prefs.DISABLE_VIDEO_AUTOPLAY.default,
         val darkThemeConfig: DarkThemeConfig = DarkThemeConfig.FOLLOW_SYSTEM,
         val useDynamicColor: Boolean = Prefs.USE_DYNAMIC_COLOR.default,
         val isLauncherIconHidden: Boolean = false,
