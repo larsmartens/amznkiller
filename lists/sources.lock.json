@@ -1,9 +1,9 @@
 {
-  "generated": "2026-10-05T13:21:46+00:00",
+  "generated": "2026-10-05T13:25:42+00:00",
   "sources": {
     "EasyList": {
       "url": "https://easylist.to/easylist/easylist.txt",
-      "checksum": "sha256:a344fb7a4c904761",
+      "checksum": "sha256:194e411cd297d6f0",
       "selectors_extracted": 61,
       "exceptions_extracted": 0,
       "dropped_negated": 0,
