@@ -1,15 +1,7 @@
 name: Sync Upstream
 
+# Automatic triggers paused at the owner's request on 2026-10-17.
 on:
-  push:
-    branches: [ main ]
-  schedule:
-    - cron: "0 6 * * *"
-  pull_request:
-    paths:
-      - '.github/workflows/sync-upstream.yml'
-      - '.github/release.sh'
-      - '.github/test_release.sh'
   workflow_dispatch:
     inputs:
       dry_run:

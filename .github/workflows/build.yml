@@ -1,12 +1,7 @@
 name: Build
 
+# Automatic triggers paused at the owner's request on 2026-10-17.
 on:
-  push:
-    tags:
-      - 'v*'
-  pull_request:
-    paths:
-      - '.github/workflows/build.yml'
   workflow_dispatch:
     inputs:
       publish:
